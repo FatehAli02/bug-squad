@@ -1,0 +1,23 @@
+{
+  "target": "utils.month_date_range",
+  "impacted": [
+    {
+      "file": "main.py",
+      "symbol": "cmd_list",
+      "relation": "imports",
+      "line": 72
+    },
+    {
+      "file": "main.py",
+      "symbol": "cmd_list",
+      "relation": "calls",
+      "line": 73
+    },
+    {
+      "file": "utils.py",
+      "symbol": "filter_by_month",
+      "relation": "calls",
+      "line": 75
+    }
+  ]
+}
