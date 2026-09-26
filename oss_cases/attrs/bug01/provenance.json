@@ -1,0 +1,70 @@
+{
+  "repository": "python-attrs/attrs",
+  "issue_url": "https://github.com/python-attrs/attrs/issues/1348",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "Bug"
+  ],
+  "fix_commit_url": "https://github.com/python-attrs/attrs/commit/e21793e90a25c7ea47a9c0369150067cc8322de0",
+  "fix_commit": "e21793e90a25c7ea47a9c0369150067cc8322de0",
+  "pre_fix_commit": "ee0f19b696c60064c58cdc08b3265aef56d49ff8",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "MIT",
+  "license_file": "LICENSE",
+  "license_url": "https://github.com/python-attrs/attrs/blob/ee0f19b696c60064c58cdc08b3265aef56d49ff8/LICENSE",
+  "license_sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f",
+  "fix_files": [
+    {
+      "path": "changelog.d/1372.change.md",
+      "added": 1,
+      "deleted": 0
+    },
+    {
+      "path": "src/attr/converters.py",
+      "added": 17,
+      "deleted": 5
+    },
+    {
+      "path": "tests/test_converters.py",
+      "added": 50,
+      "deleted": 0
+    }
+  ],
+  "changed_test_files": [
+    "tests/test_converters.py"
+  ],
+  "affected_source_files": [
+    "src/attr/converters.py"
+  ],
+  "source_sha256": {
+    "src/attr/__init__.py": "3048085d4e2cf1c90bf0de6bb7838fbf5f62ee88947db4b8a40f3ebbe913c6ac",
+    "src/attr/_cmp.py": "dee987881b60b0462dbcd3fff17ad0c1309d1686485f80c4babefa37ed9add7f",
+    "src/attr/_compat.py": "e219576d685d0e34020cae85285d448276773ce88782da69e78a84d27c5a1878",
+    "src/attr/_config.py": "cfcd55b7e19e4ffdad6b1b355d97e61f1f535a54b18cf6fa7991f52d31ac4b9e",
+    "src/attr/_funcs.py": "4860e6365103d53337b603bd029da67d17d5236e1710072b350b3ba367815c74",
+    "src/attr/_make.py": "03bfc9f6d19697c4dff7c408cd0bc089f5a57ec270d311f48514f14807f0bec9",
+    "src/attr/_next_gen.py": "0c7b02fb67a7073e71364d464913c3caca971f4fbcfe9d838d46d2f1fe118b83",
+    "src/attr/_version_info.py": "7b14aa6f76f913e7cc4ac819025130f5770ba448286cf391099a5c68482500ce",
+    "src/attr/converters.py": "d9366e30859222c0e49d6770875c55f9fb168e8a30a15511c441e288e68837d1",
+    "src/attr/exceptions.py": "1d116ae22c9b9afefe0dc670ca397a3357ae33661e2552bf845c6e6811809e02",
+    "src/attr/filters.py": "64188a58ba774742df099b2aed7d75a67f565fc36c952db05cce23b272ce19cf",
+    "src/attr/setters.py": "e7e75c4fadc640adf938d1334a07d70a46c1ee93e4691faabf5e669b83d54b34",
+    "src/attr/validators.py": "e9418689ce058659754572db21e87cb52c9b8d0e9cd4dbf3df59221082ddc200",
+    "src/attrs/__init__.py": "e451e8f84305397fa0e226a548ae1fc0e8eea07ccb212243642c283a5d364f2f",
+    "src/attrs/converters.py": "f244258eb5707d24d1bbc20dc0493c488d1e1abce659fb6c4fbaccd04ab2a213",
+    "src/attrs/exceptions.py": "0020829a0d7dfaf0c56833d8f6f165d7df523d709030dfdb10db380c02e3ce6b",
+    "src/attrs/filters.py": "54e50c66e83db8453a754b80d1d1758c89d42b43cbddf2e03f45414b977e0831",
+    "src/attrs/setters.py": "78bd5889d6105774f687dfd2608652651d4501c1c66f54ee093cb41342efd925",
+    "src/attrs/validators.py": "c5ccbac03e53b5391d086d5fe1759ba1c3d23b47da06393921f5497cfe92523d"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "CPython 3.14.4",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "merged_pr_url": "https://github.com/python-attrs/attrs/pull/1372",
+  "pr_state": "MERGED",
+  "merged_at": "2024-11-17T11:18:33Z"
+}

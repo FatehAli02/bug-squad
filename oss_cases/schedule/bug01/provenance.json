@@ -1,0 +1,47 @@
+{
+  "repository": "dbader/schedule",
+  "issue_url": "https://github.com/dbader/schedule/issues/304",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "bug"
+  ],
+  "fix_commit_url": "https://github.com/dbader/schedule/commit/4a36c6edc541a9c3893b736834703254ad90d34b",
+  "fix_commit": "4a36c6edc541a9c3893b736834703254ad90d34b",
+  "pre_fix_commit": "705f3730e40fd1a4451dedcf28de510aa5c86212",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "MIT",
+  "license_file": "LICENSE.txt",
+  "license_url": "https://github.com/dbader/schedule/blob/705f3730e40fd1a4451dedcf28de510aa5c86212/LICENSE.txt",
+  "license_sha256": "30a8352c318ce1b645acde0299697342d4380ed2637d7ca18a8ad25661e3b41b",
+  "fix_files": [
+    {
+      "path": "schedule/__init__.py",
+      "added": 5,
+      "deleted": 3
+    },
+    {
+      "path": "test_schedule.py",
+      "added": 63,
+      "deleted": 0
+    }
+  ],
+  "changed_test_files": [
+    "test_schedule.py"
+  ],
+  "affected_source_files": [
+    "schedule/__init__.py"
+  ],
+  "source_sha256": {
+    "schedule/__init__.py": "fa8479562cad31594e25e8dc3710e00b8b5cbba4332b7d15fc9a3f5b35c953c6"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "CPython 3.14.4",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "merged_pr_url": "https://github.com/dbader/schedule/pull/404",
+  "pr_state": "MERGED",
+  "merged_at": "2021-01-12T17:06:40Z"
+}

@@ -1,0 +1,59 @@
+{
+  "repository": "jquense/yup",
+  "issue_url": "https://github.com/jquense/yup/issues/343",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "bug"
+  ],
+  "fix_commit_url": "https://github.com/jquense/yup/commit/94659c257ebf7caa257cf08fcfed89542b364b0a",
+  "fix_commit": "94659c257ebf7caa257cf08fcfed89542b364b0a",
+  "pre_fix_commit": "3d90d6f49da00883b33d34240f24069d695ec1e8",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "MIT",
+  "license_file": "LICENSE.md",
+  "license_url": "https://github.com/jquense/yup/blob/3d90d6f49da00883b33d34240f24069d695ec1e8/LICENSE.md",
+  "license_sha256": "89ae1a9d73f2eb3948e37c810309ccc04e5c2c81cb83618df6bb6429d73d9fc1",
+  "fix_files": [
+    {
+      "path": "src/array.js",
+      "added": 6,
+      "deleted": 5
+    },
+    {
+      "path": "test/array.js",
+      "added": 12,
+      "deleted": 0
+    }
+  ],
+  "changed_test_files": [
+    "test/array.js"
+  ],
+  "affected_source_files": [
+    "src/array.js"
+  ],
+  "source_sha256": {
+    "src/Condition.js": "f1d2cf1893742b2e12cf33084e3e0a47790601d48d0b5785c45bb1d0c4b2ef70",
+    "src/Reference.js": "489ec352c08f0ac23d035fef11467a52c1c6a8a7478de48c6781d785a3d831dd",
+    "src/ValidationError.js": "44cf3847c32e73c5fa6b7a192a0860116fe50619e55d54730e26e20839e22b59",
+    "src/array.js": "db71a2af34a02344efac5e0a8934a8e2c4e3cbafe5b954c8c644d5c68b432606",
+    "src/locale.js": "e8847c263e2d4cb0621a2fd0a7ee39200c2ba28d4e0cb424175441f94262df08",
+    "src/mixed.js": "03ca05cbdb5beb0b9c7fa421da6b21b62bc93688ec25c67de6c153a86d22bf08",
+    "src/util/createValidation.js": "25792558f18038361a00e9a9c4f0cfcc7afff680c08cbf355c8419a9c3002945",
+    "src/util/inherits.js": "3cdccc2534a5efb25161de8247f060b805946f93dc9f4c864bb41b163c0da437",
+    "src/util/isAbsent.js": "edca550121bb466515994f97d5687d944bf006e85c11d6ef47724b7b57a68f9f",
+    "src/util/isSchema.js": "aeb9a913e69cd0d71ca7c14c2c8caeefcda5b8bbfc65c52b9e25eab77c857772",
+    "src/util/makePath.js": "6cbfd1c097a9dbf361311e233b80798f13c6a194011cf3acb2efd171b0a095ec",
+    "src/util/prependDeep.js": "b6a1ffabe13d6493d21e328cc239fae0cc9b82dfb5b3d29692cdca37704b0540",
+    "src/util/printValue.js": "5b33b6962fe326685c8ce9ef9a03ea6b10d36d4064ca867bde58d8ef46b62498",
+    "src/util/reach.js": "6e0784170ce01e618deafeffc4020cc06fa0a4428e6056a8b114ef005b803f61",
+    "src/util/runValidations.js": "bb63ca286713547fa771261c3a81ce11474c21ace0452dfb0ae26678564d9db3"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "Node.js 22.22.1, esbuild 0.25.12",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "link_evidence": "The issue timeline identifies this commit as the closing fix."
+}

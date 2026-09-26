@@ -1,0 +1,1 @@
+{"private":true,"dependencies":{"esbuild":"0.25.12","lodash":"4.17.21","property-expr":"2.0.6","toposort":"2.0.2","nanoclone":"0.2.1","synchronous-promise":"2.0.17","fn-name":"3.0.0","@babel/runtime":"7.28.4"}}

@@ -1,0 +1,66 @@
+{
+  "repository": "python-jsonschema/jsonschema",
+  "issue_url": "https://github.com/python-jsonschema/jsonschema/issues/1157",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "Bug",
+    "Error Reporting"
+  ],
+  "fix_commit_url": "https://github.com/python-jsonschema/jsonschema/commit/8cff13d0e8b7d92980bdab69e47805167c9aa305",
+  "fix_commit": "8cff13d0e8b7d92980bdab69e47805167c9aa305",
+  "pre_fix_commit": "d9be1a49fa49dc5fdd3b20344ab57dad24c6e82d",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "MIT",
+  "license_file": "COPYING",
+  "license_url": "https://github.com/python-jsonschema/jsonschema/blob/d9be1a49fa49dc5fdd3b20344ab57dad24c6e82d/COPYING",
+  "license_sha256": "4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439",
+  "fix_files": [
+    {
+      "path": "CHANGELOG.rst",
+      "added": 5,
+      "deleted": 0
+    },
+    {
+      "path": "jsonschema/_keywords.py",
+      "added": 14,
+      "deleted": 5
+    },
+    {
+      "path": "jsonschema/_utils.py",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "jsonschema/tests/test_validators.py",
+      "added": 88,
+      "deleted": 2
+    }
+  ],
+  "changed_test_files": [
+    "jsonschema/tests/test_validators.py"
+  ],
+  "affected_source_files": [
+    "jsonschema/_keywords.py",
+    "jsonschema/_utils.py"
+  ],
+  "source_sha256": {
+    "jsonschema/__init__.py": "2e43f0b1cc92949f654cea7b641d4cee343c99b1bbf9b606e35881c1b67ea3db",
+    "jsonschema/_format.py": "3930afbef28a9a4ed21946bc377d4256988cc45edc67d97558edadad1e248c1f",
+    "jsonschema/_keywords.py": "9e2e905aad087d756347191ade685ee27ab22f80b8899820f72cc49a9f602770",
+    "jsonschema/_legacy_keywords.py": "0fb005331ab1b57bdcaaacfca509662713e296432cd23a7ab6e481f27f77d0dd",
+    "jsonschema/_types.py": "71062534abc8d949316a81df395ad027f260b16c54d0f609e44d7d5e59d0f89e",
+    "jsonschema/_typing.py": "35984f86404e9fd20d61993c1baf6b0deb916a6ced81708c2e1d74cfd71f4fa8",
+    "jsonschema/_utils.py": "6b5cf3d4d3782c07435c24971c4a3b742461f6934fce0db09fdb4b95631611b0",
+    "jsonschema/exceptions.py": "c27864496271e4f610b22ad4b4b99e8af7f97b0a288f11b1aacd0082b19a4e89",
+    "jsonschema/protocols.py": "e8e43f304d3eac1d237c2903a5b2aaa9be2014cd06d0d530e92dfc86cccd048d",
+    "jsonschema/validators.py": "f75d4708a3b759f75706701d7106786c8560240dc78aff5c3bce648dca2e567e"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "CPython 3.14.4",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "link_evidence": "The issue timeline identifies this commit as the closing fix."
+}

@@ -1,0 +1,59 @@
+{
+  "repository": "jquense/yup",
+  "issue_url": "https://github.com/jquense/yup/issues/1160",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "bug"
+  ],
+  "fix_commit_url": "https://github.com/jquense/yup/commit/e8e5b469e61a366288faec4ab664757fbb25fecd",
+  "fix_commit": "e8e5b469e61a366288faec4ab664757fbb25fecd",
+  "pre_fix_commit": "e785e1a4ddf1b7fb2d1ef48cb258d8e21a775446",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "MIT",
+  "license_file": "LICENSE.md",
+  "license_url": "https://github.com/jquense/yup/blob/e785e1a4ddf1b7fb2d1ef48cb258d8e21a775446/LICENSE.md",
+  "license_sha256": "89ae1a9d73f2eb3948e37c810309ccc04e5c2c81cb83618df6bb6429d73d9fc1",
+  "fix_files": [
+    {
+      "path": "src/schema.ts",
+      "added": 0,
+      "deleted": 2
+    },
+    {
+      "path": "test/mixed.js",
+      "added": 13,
+      "deleted": 0
+    }
+  ],
+  "changed_test_files": [
+    "test/mixed.js"
+  ],
+  "affected_source_files": [
+    "src/schema.ts"
+  ],
+  "source_sha256": {
+    "src/Condition.ts": "62e362b7f46e9a91f091e4fb71680514ac8dfcb0cb2c17d7179e6c8da5379ee8",
+    "src/Reference.ts": "e39c1175f884388949b21516a61af0df0153e2e69c2a77c27c92a37da88faa49",
+    "src/ValidationError.ts": "325d624e5c3194883e9e359057933154f4bf320a8ae427bcce0a98f0d677f205",
+    "src/locale.ts": "47028af4246e5388cd9b9f976e8919385fe13739e01e1ac3e620aad99be70487",
+    "src/mixed.ts": "8568500ceaf7491fd09753fda571266d7228da27aca4b05635488525a5c09bcf",
+    "src/schema.ts": "dc76c2b506f017f76613151d17448e2cefba38b8a2e3a4d29ad3dbf94d1bfe4f",
+    "src/util/ReferenceSet.ts": "dbc95ee9023fb5335dbcbccbe9e7cf0f20f662c937d45985fabd03fdbeb2f232",
+    "src/util/createValidation.ts": "e36ed2cec6431411223f6e59e30597c175384285de31d20371959e54db74fdb0",
+    "src/util/isSchema.ts": "5b67787e123b5a13a98be0ef1d907960e7746bb682b277c7f8c54356337d59f9",
+    "src/util/printValue.ts": "3623660cf4b0860b93074249df005502bbcaaa260bfe1f2f07bc88c832f8017c",
+    "src/util/reach.ts": "72fc5084e6c995eeb12a90d0701dfe3567961c82588a40e743576cd4e5611fec",
+    "src/util/runTests.ts": "bf9e7643d297c9db29c118be494b9efc234d5af78c3ed55004a976a61babf6dc",
+    "src/util/toArray.ts": "b9958df0d89fcb0b7fb1658b64055ca3d58e0babbc22139af89dae1c2ef91647"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "Node.js 22.22.1, esbuild 0.25.12",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "merged_pr_url": "https://github.com/jquense/yup/pull/1177",
+  "pr_state": "MERGED",
+  "merged_at": "2020-12-13T19:43:11Z"
+}

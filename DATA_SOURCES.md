@@ -42,3 +42,59 @@ If you use SWE-bench or BugsInPy, list the specific underlying repo and verify i
 - **Collection:** <!-- PASTE COLLECTION NAME HERE (e.g., SWE-bench) -->
 - **Underlying Repo:** <!-- PASTE REPO NAME HERE (e.g., django/django) -->
 - **License:** <!-- PASTE UNDERLYING LICENSE HERE (e.g., BSD-3-Clause) -->
+
+## Curated OSS cases — September 26, 2026
+
+The following entries are the populated source records for `oss_cases/`; the earlier placeholder entries are not additional dataset sources. All 15 shortlisted issues passed the license, bug, linked-fix, small-diff, and changed-test checks. None were dropped. Focused reproductions failed on all 15 parent snapshots and passed on temporary fixed copies.
+
+Only source modules needed by the focused reproductions and their original licenses are copied. Tickets and reproduction inputs are newly written. Required upstream attribution is preserved; reporter profiles, issue prose, original logs, commit messages, and repository histories are not imported. Historical data absence is not certified. Detailed file hashes, first-parent SHAs, and changed-test paths are recorded in each case's `provenance.json`.
+
+### python-attrs/attrs
+
+- Repository: https://github.com/python-attrs/attrs
+- License: **MIT**, checked from the actual `LICENSE` at each copied pre-fix snapshot, with a copy retained per case.
+- Description: Creates Python classes with generated initialization, conversion, and comparison behavior.
+- Bugs used:
+  - [attrs/bug01](oss_cases/attrs/bug01_ticket.md): [issue #1348](https://github.com/python-attrs/attrs/issues/1348) — A nullable conversion pipeline rejects supplied values. [Fix](https://github.com/python-attrs/attrs/commit/e21793e90a25c7ea47a9c0369150067cc8322de0); [license](https://github.com/python-attrs/attrs/blob/ee0f19b696c60064c58cdc08b3265aef56d49ff8/LICENSE).
+  - [attrs/bug02](oss_cases/attrs/bug02_ticket.md): [issue #1327](https://github.com/python-attrs/attrs/issues/1327) — Reassigning a field with chained converters raises an internal error. [Fix](https://github.com/python-attrs/attrs/commit/6fda0a4e086b56d7058855e4c15112c8f58de74c); [license](https://github.com/python-attrs/attrs/blob/53e632c5218b729da6ac37a35b4b68379dc18999/LICENSE).
+  - [attrs/bug03](oss_cases/attrs/bug03_ticket.md): [issue #1284](https://github.com/python-attrs/attrs/issues/1284) — A defaulted keyword-only field prevents class creation with a pre-init hook. [Fix](https://github.com/python-attrs/attrs/commit/09161fc9181bf94aa3bbc5509c663d736a9553dc); [license](https://github.com/python-attrs/attrs/blob/689a0e64012d1e576ebd99e786a254bc537582c6/LICENSE).
+
+### python-jsonschema/jsonschema
+
+- Repository: https://github.com/python-jsonschema/jsonschema
+- License: **MIT**, checked from the actual `COPYING` at each copied pre-fix snapshot, with a copy retained per case.
+- Description: Validates Python data against JSON Schema documents.
+- Bugs used:
+  - [jsonschema/bug01](oss_cases/jsonschema/bug01_ticket.md): [issue #1328](https://github.com/python-jsonschema/jsonschema/issues/1328) — Inspecting a valid array position changes the error index. [Fix](https://github.com/python-jsonschema/jsonschema/commit/7fa1acc948b34ab6283b3621ecbdc4360a717ba7); [license](https://github.com/python-jsonschema/jsonschema/blob/edf3dc38d29d275c277a85c00dd4d57f21db0de6/COPYING).
+  - [jsonschema/bug02](oss_cases/jsonschema/bug02_ticket.md): [issue #1157](https://github.com/python-jsonschema/jsonschema/issues/1157) — Mixed-type excess array values interrupt validation error reporting. [Fix](https://github.com/python-jsonschema/jsonschema/commit/8cff13d0e8b7d92980bdab69e47805167c9aa305); [license](https://github.com/python-jsonschema/jsonschema/blob/d9be1a49fa49dc5fdd3b20344ab57dad24c6e82d/COPYING).
+  - [jsonschema/bug03](oss_cases/jsonschema/bug03_ticket.md): [issue #1125](https://github.com/python-jsonschema/jsonschema/issues/1125) — Extending a legacy validator changes reference-sibling handling. [Fix](https://github.com/python-jsonschema/jsonschema/commit/f79bad5fcd1baf5ac2fcd979dbd31616f913febd); [license](https://github.com/python-jsonschema/jsonschema/blob/52c2419625e875e7e7c8124bcbfae8cde92bbda3/COPYING).
+
+### dbader/schedule
+
+- Repository: https://github.com/dbader/schedule
+- License: **MIT**, checked from the actual `LICENSE.txt` at each copied pre-fix snapshot, with a copy retained per case.
+- Description: Schedules Python callables to run periodically inside a process.
+- Bugs used:
+  - [schedule/bug01](oss_cases/schedule/bug01_ticket.md): [issue #304](https://github.com/dbader/schedule/issues/304) — A daily job finishing after midnight misses its next evening run. [Fix](https://github.com/dbader/schedule/commit/4a36c6edc541a9c3893b736834703254ad90d34b); [license](https://github.com/dbader/schedule/blob/705f3730e40fd1a4451dedcf28de510aa5c86212/LICENSE.txt).
+  - [schedule/bug02](oss_cases/schedule/bug02_ticket.md): [issue #286](https://github.com/dbader/schedule/issues/286) — An hourly schedule loses the requested seconds component. [Fix](https://github.com/dbader/schedule/commit/1dab2d43acb6920dfa4c112a4b1c1f92e22f57f2); [license](https://github.com/dbader/schedule/blob/b3e75d28134c51bae3a37793b8b5ca52353c9753/LICENSE.txt).
+  - [schedule/bug03](oss_cases/schedule/bug03_ticket.md): [issue #190](https://github.com/dbader/schedule/issues/190) — Formatting a job that receives itself as an argument recurses. [Fix](https://github.com/dbader/schedule/commit/5d2653c28b1029f1e9ddc85cd9ef26c29a79fcea); [license](https://github.com/dbader/schedule/blob/3108fc3194c2f3071d6e41adfd21577fc62c52fc/LICENSE.txt).
+
+### jquense/yup
+
+- Repository: https://github.com/jquense/yup
+- License: **MIT**, checked from the actual `LICENSE.md` at each copied pre-fix snapshot, with a copy retained per case.
+- Description: Provides composable schemas for parsing and validating JavaScript values.
+- Bugs used:
+  - [yup/bug01](oss_cases/yup/bug01_ticket.md): [issue #1423](https://github.com/jquense/yup/issues/1423) — Concatenation forgets an object schema's dependency exclusions. [Fix](https://github.com/jquense/yup/commit/53343491f0624120812182a70919a2fc3ebe11f5); [license](https://github.com/jquense/yup/blob/f3056f2cbade92eaf0427848f43df97eae010555/LICENSE.md).
+  - [yup/bug02](oss_cases/yup/bug02_ticket.md): [issue #343](https://github.com/jquense/yup/issues/343) — Ensuring an array discards a scalar input. [Fix](https://github.com/jquense/yup/commit/94659c257ebf7caa257cf08fcfed89542b364b0a); [license](https://github.com/jquense/yup/blob/3d90d6f49da00883b33d34240f24069d695ec1e8/LICENSE.md).
+  - [yup/bug03](oss_cases/yup/bug03_ticket.md): [issue #1160](https://github.com/jquense/yup/issues/1160) — Combining schemas removes an existing label and metadata. [Fix](https://github.com/jquense/yup/commit/e8e5b469e61a366288faec4ab664757fbb25fecd); [license](https://github.com/jquense/yup/blob/e785e1a4ddf1b7fb2d1ef48cb258d8e21a775446/LICENSE.md).
+
+### arrow-py/arrow
+
+- Repository: https://github.com/arrow-py/arrow
+- License: **Apache-2.0**, checked from the actual `LICENSE` at each copied pre-fix snapshot, with a copy retained per case.
+- Description: Creates, manipulates, and renders dates and times with locale support.
+- Bugs used:
+  - [arrow/bug01](oss_cases/arrow/bug01_ticket.md): [issue #1015](https://github.com/arrow-py/arrow/issues/1015) — An empty humanization unit selection raises the wrong exception. [Fix](https://github.com/arrow-py/arrow/commit/cc1cbeb01878b0985aba8f6ec4e3a7a748b527a6); [license](https://github.com/arrow-py/arrow/blob/f7a3aa3225eb646fec9156e8e39dc33750f2a227/LICENSE).
+  - [arrow/bug02](oss_cases/arrow/bug02_ticket.md): [issue #1078](https://github.com/arrow-py/arrow/issues/1078) — Czech and Slovak humanization fail when a selected unit is zero. [Fix](https://github.com/arrow-py/arrow/commit/74bc0a1d2583ca28994bd8dca7929ea5b061c25f); [license](https://github.com/arrow-py/arrow/blob/a2ebb7e20b4897ee7b7bf4676a5ac3e6c0f27f47/LICENSE).
+  - [arrow/bug03](oss_cases/arrow/bug03_ticket.md): [issue #996](https://github.com/arrow-py/arrow/issues/996) — A past timestamp is described as future when zero-valued units are included. [Fix](https://github.com/arrow-py/arrow/commit/a2ebb7e20b4897ee7b7bf4676a5ac3e6c0f27f47); [license](https://github.com/arrow-py/arrow/blob/be57df5a7474dda3f6c16176ad181fa176039f2c/LICENSE).

@@ -1,0 +1,68 @@
+{
+  "repository": "arrow-py/arrow",
+  "issue_url": "https://github.com/arrow-py/arrow/issues/996",
+  "issue_state": "CLOSED",
+  "issue_labels": [
+    "bug"
+  ],
+  "fix_commit_url": "https://github.com/arrow-py/arrow/commit/a2ebb7e20b4897ee7b7bf4676a5ac3e6c0f27f47",
+  "fix_commit": "a2ebb7e20b4897ee7b7bf4676a5ac3e6c0f27f47",
+  "pre_fix_commit": "be57df5a7474dda3f6c16176ad181fa176039f2c",
+  "baseline_rule": "First parent of the fix commit; source bytes are unmodified.",
+  "license": "Apache-2.0",
+  "license_file": "LICENSE",
+  "license_url": "https://github.com/arrow-py/arrow/blob/be57df5a7474dda3f6c16176ad181fa176039f2c/LICENSE",
+  "license_sha256": "40d6e1255d7151f5f041a514725d3c94ffa8c1881e5a0c29b6bea93f03e2e3bb",
+  "fix_files": [
+    {
+      "path": "arrow/arrow.py",
+      "added": 1,
+      "deleted": 1
+    },
+    {
+      "path": "arrow/constants.py",
+      "added": 13,
+      "deleted": 0
+    },
+    {
+      "path": "arrow/locales.py",
+      "added": 10,
+      "deleted": 1
+    },
+    {
+      "path": "tests/test_arrow.py",
+      "added": 71,
+      "deleted": 0
+    }
+  ],
+  "changed_test_files": [
+    "tests/test_arrow.py"
+  ],
+  "affected_source_files": [
+    "arrow/arrow.py",
+    "arrow/constants.py",
+    "arrow/locales.py"
+  ],
+  "source_sha256": {
+    "arrow/__init__.py": "1f1b12246979e86a1e1c1fff368fa4746982fd67acfd3b5fd2884ecbb3a81628",
+    "arrow/_version.py": "3259b81af99bffac90c7051bbf62ac73e0491572cf83d1f556dda257bc17ac0e",
+    "arrow/api.py": "ead76aac6d0d8eb28edb6fde5875386b9c5eadf47a22b64f63ecb29c6a67bd33",
+    "arrow/arrow.py": "91949a6cdc148b4c4b9f74026d6d29c2d7b14b2d853f8700ee46bb7254d03967",
+    "arrow/constants.py": "6f35b8307c5a832784dbc43bdbe723f23633c3cdab47c8b04fe299b3e6f83c48",
+    "arrow/factory.py": "7563f75c861f623aa9ec308e7446000fb3d07ec6e9404ef43e1f4e4b50352e71",
+    "arrow/formatter.py": "629618f23786647d2c823736dcf066f0729ff843072e9fbc51ae765dfad580f4",
+    "arrow/locales.py": "144675d19108780fb728e5277b00e55f8fbdef3151a2776f7cee40d219aaaa43",
+    "arrow/parser.py": "8a7818e1ac403b8d2411850bf0cc2a4c88457a0080568b83664ddce183acf5a2",
+    "arrow/util.py": "c670debea47235e6166e5df1fa7fd3ca8e1c3a01dc7606f1144085b09d57a047"
+  },
+  "validation": {
+    "before": "reproduced",
+    "after": "passed",
+    "environment": "CPython 3.14.4",
+    "scope": "Original focused reproduction only; upstream full test suites were not run.",
+    "after_method": "Temporary copy of the baseline with affected source files replaced by their exact fix-commit versions."
+  },
+  "merged_pr_url": "https://github.com/arrow-py/arrow/pull/1077",
+  "pr_state": "MERGED",
+  "merged_at": "2021-12-18T19:18:51Z"
+}
