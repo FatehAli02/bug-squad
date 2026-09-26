@@ -1,0 +1,2 @@
+https://github.com/python-jsonschema/jsonschema/commit/7fa1acc948b34ab6283b3621ecbdc4360a717ba7
+7fa1acc948b34ab6283b3621ecbdc4360a717ba7

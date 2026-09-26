@@ -1,0 +1,2 @@
+https://github.com/arrow-py/arrow/commit/cc1cbeb01878b0985aba8f6ec4e3a7a748b527a6
+cc1cbeb01878b0985aba8f6ec4e3a7a748b527a6

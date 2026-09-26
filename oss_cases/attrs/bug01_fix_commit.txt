@@ -1,0 +1,2 @@
+https://github.com/python-attrs/attrs/commit/e21793e90a25c7ea47a9c0369150067cc8322de0
+e21793e90a25c7ea47a9c0369150067cc8322de0

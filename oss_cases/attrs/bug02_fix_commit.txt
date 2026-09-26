@@ -1,0 +1,2 @@
+https://github.com/python-attrs/attrs/commit/6fda0a4e086b56d7058855e4c15112c8f58de74c
+6fda0a4e086b56d7058855e4c15112c8f58de74c
