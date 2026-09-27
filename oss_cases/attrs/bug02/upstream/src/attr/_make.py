@@ -2709,6 +2709,28 @@ class Converter:
             converter
         ).get_first_param_type()
 
+        # Build a __call__ that invokes self.converter with the correct
+        # signature depending on takes_self / takes_field.  This slot must
+        # be set here so that Converter instances are directly callable
+        # (e.g. from setters.convert which does ``c(new_value)``).
+        if not (takes_self or takes_field):
+            self.__call__ = converter
+        elif takes_self and takes_field:
+            def __call__(val, self_=None, field=None):
+                return converter(val, self_, field)
+
+            self.__call__ = __call__
+        elif takes_self:
+            def __call__(val, self_=None, field=None):
+                return converter(val, self_)
+
+            self.__call__ = __call__
+        else:
+            def __call__(val, self_=None, field=None):
+                return converter(val, field)
+
+            self.__call__ = __call__
+
     @staticmethod
     def _get_global_name(attr_name: str) -> str:
         """
