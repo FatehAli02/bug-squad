@@ -34,7 +34,7 @@ def month_date_range(year: int, month: int):
     """
     start = date(year, month, 1)
     last_day = calendar.monthrange(year, month)[1]
-    end = date(year, month, last_day - 1)
+    end = date(year, month, last_day)
     return start, end
 
 
