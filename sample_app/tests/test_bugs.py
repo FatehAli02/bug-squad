@@ -1,5 +1,5 @@
 """
-tests/test_bugs.py — Reproducer tests for sample_app bug tickets 02–05.
+tests/test_bugs.py — Reproducer tests for sample_app bug tickets 01–05.
 
 Each test FAILS on the pre-fix codebase and will PASS once the corresponding
 bug is fixed.  Do not fix the bugs here — this file is the bug evidence.
@@ -24,6 +24,63 @@ from models import Expense
 import utils as utils_module
 from utils import to_csv_rows
 import main as main_module
+
+
+# ---------------------------------------------------------------------------
+# Ticket 01 — Last day of month excluded from monthly expense list
+# ---------------------------------------------------------------------------
+
+class TestBug01LastDayOfMonthExcluded:
+    """
+    Ticket 01: expenses recorded on the last calendar day of a month are
+    missing from monthly_expenses() / monthly reports because month_date_range()
+    computes end = date(year, month, last_day - 1) instead of
+    end = date(year, month, last_day).
+
+    The inclusive upper bound is off by one, so the final calendar day of
+    every month is silently excluded from all monthly queries.
+    """
+
+    def test_last_day_31_included_in_month(self, tmp_path):
+        """An expense on the 31st of a 31-day month must appear in that month's list."""
+        tracker = ExpenseTracker(store_path=str(tmp_path / "store.json"))
+        tracker.add_expense("Month-end dinner", 45.00, "food", expense_date="2024-05-31")
+        may_expenses = tracker.monthly_expenses(2024, 5)
+        assert any(e.date == "2024-05-31" for e in may_expenses), (
+            "Expense dated 2024-05-31 (last day of May) was not found in "
+            "monthly_expenses(2024, 5) — off-by-one bug in month_date_range"
+        )
+
+    def test_last_day_30_included_in_month(self, tmp_path):
+        """An expense on the 30th of a 30-day month must appear in that month's list."""
+        tracker = ExpenseTracker(store_path=str(tmp_path / "store.json"))
+        tracker.add_expense("April expense", 20.00, "food", expense_date="2024-04-30")
+        april_expenses = tracker.monthly_expenses(2024, 4)
+        assert any(e.date == "2024-04-30" for e in april_expenses), (
+            "Expense dated 2024-04-30 (last day of April) was not found in "
+            "monthly_expenses(2024, 4) — off-by-one bug in month_date_range"
+        )
+
+    def test_last_day_of_feb_included_in_month(self, tmp_path):
+        """An expense on the 29th of a leap-year February must appear in that month."""
+        tracker = ExpenseTracker(store_path=str(tmp_path / "store.json"))
+        tracker.add_expense("Feb end", 10.00, "food", expense_date="2024-02-29")
+        feb_expenses = tracker.monthly_expenses(2024, 2)
+        assert any(e.date == "2024-02-29" for e in feb_expenses), (
+            "Expense dated 2024-02-29 (last day of Feb in leap year 2024) was "
+            "not found in monthly_expenses(2024, 2) — off-by-one bug in month_date_range"
+        )
+
+    def test_last_day_included_in_monthly_total(self, tmp_path):
+        """The last-day expense must be counted in the monthly total."""
+        tracker = ExpenseTracker(store_path=str(tmp_path / "store.json"))
+        tracker.add_expense("Mid month",  30.00, "food", expense_date="2024-05-15")
+        tracker.add_expense("Last day",   15.00, "food", expense_date="2024-05-31")
+        total = tracker.monthly_total(2024, 5)
+        assert total == pytest.approx(45.00), (
+            f"Monthly total for May 2024 should be 45.00 but got {total:.2f} — "
+            "the last-day expense is being excluded from the total"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -107,58 +164,58 @@ class TestBug03OverBudgetBoundary:
 
 class TestBug04MutableDefaultHeaders:
     """
-    Ticket 04: to_csv_rows uses a mutable list as a default argument value.
-    The default `[]` is created once at function-definition time and shared
-    across all call sites.  Any code that obtains a reference to that shared
-    default and mutates it will corrupt all future calls that rely on the
+    Ticket 04: to_csv_rows used a mutable list as a default argument value.
+    The default `[]` was created once at function-definition time and shared
+    across all call sites.  Any code that obtained a reference to that shared
+    default and mutated it would corrupt all future calls that relied on the
     default — a classic Python mutable-default-argument footgun.
 
-    Pre-fix signature in utils.py:
-        def to_csv_rows(expenses, headers: List[str] = []) -> List[str]:
+    Fixed signature in utils.py:
+        def to_csv_rows(expenses, headers: Optional[List[str]] = None) -> List[str]:
 
-    The test proves the bug by:
-    1. Retrieving the actual default-argument object from the function's
-       signature (via inspect).
-    2. Mutating it directly (simulating any code that got a reference and
-       appended to it — e.g. a call that did `headers += extra`).
-    3. Confirming that subsequent no-argument calls now return a corrupted
-       header row rather than the expected default.
+    The tests verify the fix is in place and that two independent calls with
+    the same explicit headers produce identical output.
     """
 
-    def test_mutable_default_can_be_corrupted_externally(self):
+    def test_default_is_not_mutable_list(self):
         """
-        The default list object is accessible and mutable.  Mutating it
-        causes all future headerless calls to produce wrong output.
-        This PASSES (meaning the bug is present) when headers=[] is the default.
-        It would FAIL (raise TypeError on `extend`) when None is the default.
+        The default for `headers` must be None (or Parameter.empty), not a
+        mutable list.  A mutable list default is shared across all callers and
+        can be corrupted externally.
         """
         sig = inspect.signature(utils_module.to_csv_rows)
         default_val = sig.parameters["headers"].default
-
-        # The bug: the default is a mutable list, not None / inspect.Parameter.empty
-        assert isinstance(default_val, list), (
-            "Default is not a mutable list — bug may already be fixed "
-            f"(default is {default_val!r})"
+        assert not isinstance(default_val, list), (
+            "headers default is still a mutable list — mutable-default-argument "
+            f"bug has not been fixed (default is {default_val!r})"
         )
 
-        # Corrupt the shared default
-        original = list(default_val)
-        try:
-            default_val.extend(["id", "title"])
-            e = Expense.create("Coffee", 3.50, "food")
-            rows = to_csv_rows([e])           # no headers argument
-            # A healthy implementation returns the canonical 6-column header.
-            # With the bug, it now returns whatever was appended to the default.
-            expected_default = "id,title,amount,category,date,notes"
-            assert rows[0] == expected_default, (
-                f"Default header was corrupted by external mutation: {rows[0]!r} "
-                f"(expected {expected_default!r})"
-            )
-        finally:
-            # Restore the default so other tests in the same process are not
-            # affected by the corruption we introduced.
-            default_val.clear()
-            default_val.extend(original)
+    def test_two_calls_with_same_headers_produce_identical_output(self):
+        """
+        Calling to_csv_rows twice with the same explicit headers must produce
+        identical header rows.  With the mutable-default bug, the second call
+        could accumulate extra columns from the first.
+        """
+        e = Expense.create("Coffee", 3.50, "food")
+        rows1 = to_csv_rows([e], headers=["id", "title"])
+        rows2 = to_csv_rows([e], headers=["id", "title"])
+        assert rows1[0] == "id,title", (
+            f"First call produced wrong header: {rows1[0]!r}"
+        )
+        assert rows2[0] == "id,title", (
+            f"Second call produced wrong/accumulated header: {rows2[0]!r}"
+        )
+        assert rows1[0] == rows2[0], (
+            f"Headers differ between calls: {rows1[0]!r} vs {rows2[0]!r}"
+        )
+
+    def test_no_headers_uses_default_six_columns(self):
+        """Omitting headers must always produce the canonical 6-column header."""
+        e = Expense.create("Tea", 1.50, "food")
+        rows = to_csv_rows([e])
+        assert rows[0] == "id,title,amount,category,date,notes", (
+            f"Default header is wrong: {rows[0]!r}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -167,30 +224,35 @@ class TestBug04MutableDefaultHeaders:
 
 class TestBug05UtcDateDefault:
     """
-    Ticket 05: main._today_utc() uses datetime.now(tz=timezone.utc), which
+    Ticket 05: main._today_utc() used datetime.now(tz=timezone.utc), which
     returns the UTC date.  For users in UTC+ timezones, an expense added after
-    midnight local time is dated the previous calendar day (the UTC date).
+    midnight local time was dated the previous calendar day (the UTC date).
 
-    The function should return the local wall-clock date, not the UTC date.
+    Fixed implementation uses date.today() — the system's local wall-clock date.
 
-    Proof strategy: call _today_utc() and check directly that it calls
-    datetime.now() WITH a UTC timezone argument.  The correct fix would call
-    datetime.now() with NO timezone (or use date.today()).  We verify the bug
-    is present by inspecting the source of _today_utc for the UTC sentinel.
+    Proof strategy: inspect the source to confirm the UTC sentinel is gone,
+    and confirm the return value matches date.today().
     """
 
-    def test_today_utc_uses_utc_not_local_clock(self):
+    def test_today_utc_does_not_use_timezone_utc(self):
         """
-        _today_utc() must NOT pass tz=timezone.utc to datetime.now().
-        The pre-fix implementation hard-codes UTC, causing UTC-vs-local skew.
-        We assert the function returns the LOCAL date (not the UTC date) when
-        the two differ — simulated by directly checking the implementation
-        calls datetime.now() without a tz argument.
+        _today_utc() must NOT contain 'timezone.utc' in its body.
+        The pre-fix implementation hard-coded UTC; the fix uses date.today().
         """
         import inspect as _inspect
         source = _inspect.getsource(main_module._today_utc)
-        # The bug: the function body contains the UTC timezone sentinel
-        assert "timezone.utc" not in source and "utc" not in source.lower(), (
-            "_today_utc() still uses UTC time instead of the local clock.\n"
+        assert "timezone.utc" not in source, (
+            "_today_utc() still contains 'timezone.utc' — UTC bug not fixed.\n"
             f"Function source:\n{source}"
+        )
+
+    def test_today_utc_returns_local_date(self):
+        """
+        _today_utc() must return the same string as date.today().isoformat().
+        """
+        from datetime import date as _date
+        expected = _date.today().isoformat()
+        result = main_module._today_utc()
+        assert result == expected, (
+            f"_today_utc() returned {result!r} but local date is {expected!r}"
         )

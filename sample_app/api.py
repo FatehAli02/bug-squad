@@ -218,7 +218,7 @@ class ExpenseTracker:
     def over_budget_categories(self, year: int, month: int) -> List[str]:
         """Return category names where spending exceeds the budget this month."""
         statuses = self.check_all_budgets(year, month)
-        return [s["category"] for s in statuses if s["percent_used"] > 100]
+        return [s["category"] for s in statuses if s["over_budget"]]
 
     # ------------------------------------------------------------------
     # Reports

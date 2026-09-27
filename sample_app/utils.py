@@ -169,13 +169,13 @@ def summary_report(expenses: List[Expense], month_label: str = "") -> str:
 # Export helpers
 # ---------------------------------------------------------------------------
 
-def to_csv_rows(expenses: List[Expense], headers: List[str] = []) -> List[str]:
+def to_csv_rows(expenses: List[Expense], headers: Optional[List[str]] = None) -> List[str]:
     """
     Convert a list of expenses to CSV-formatted strings.
     Optionally prepend a header row.
     """
     default_headers = ["id", "title", "amount", "category", "date", "notes"]
-    row_headers = headers if headers else default_headers
+    row_headers = headers if headers is not None else default_headers
     rows = [",".join(row_headers)]
     for exp in expenses:
         row = [

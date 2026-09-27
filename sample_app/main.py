@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime
 
 from api import ExpenseTracker
 
@@ -26,8 +26,8 @@ from api import ExpenseTracker
 # ---------------------------------------------------------------------------
 
 def _today_utc() -> str:
-    """Return today's date as an ISO-8601 string, based on UTC time."""
-    return datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+    """Return today's date as an ISO-8601 string, based on the local clock."""
+    return date.today().isoformat()
 
 
 def _print_expenses(expenses) -> None:
