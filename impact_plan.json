@@ -1,0 +1,41 @@
+{
+  "root_cause": "attrs.converters.optional() wraps a Converter returned by pipe(str, int) in a plain single-argument closure. The generated __init__ therefore calls optional_converter(value), and optional_converter calls the inner Converter with only value even though the Converter requires value, instance, and field. This causes a TypeError when Measurement(\"42\") is constructed.",
+  "impacted_items": [
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attr/converters.py",
+      "function": "optional",
+      "risk": "High",
+      "reason": "This is the function containing the bug; optional() incorrectly handles a Converter object returned by pipe()."
+    },
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+      "function": "pipe",
+      "risk": "High",
+      "reason": "pipe() returns a Converter requiring value, instance, and field, which is incompatible with the current optional() wrapper."
+    },
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+      "function": "Converter.__call__",
+      "risk": "High",
+      "reason": "The Converter call requires three arguments, but optional_converter currently supplies only the value."
+    },
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+      "function": "_make_init",
+      "risk": "Low",
+      "reason": "It correctly wraps the plain optional_converter, but this wrapping exposes the incompatible single-argument call path."
+    },
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attrs/converters.py",
+      "function": "optional",
+      "risk": "Medium",
+      "reason": "This module re-exports optional from attr.converters, so the namespace is affected when the underlying implementation is fixed."
+    },
+    {
+      "file": "oss_cases/attrs/bug01/upstream/src/attr/__init__.py",
+      "function": "converters",
+      "risk": "Low",
+      "reason": "This is a namespace import with no converter logic of its own."
+    }
+  ]
+}
