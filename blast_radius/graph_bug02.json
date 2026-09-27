@@ -1,0 +1,41 @@
+{
+  "target": "api.ExpenseTracker.update_expense",
+  "impacted": [
+    {
+      "file": "main.py",
+      "symbol": "cmd_update",
+      "relation": "calls",
+      "line": 82
+    },
+    {
+      "file": "tests\\test_api.py",
+      "symbol": "TestGetUpdateDelete.test_update_title",
+      "relation": "calls",
+      "line": 54
+    },
+    {
+      "file": "tests\\test_api.py",
+      "symbol": "TestGetUpdateDelete.test_update_amount",
+      "relation": "calls",
+      "line": 59
+    },
+    {
+      "file": "tests\\test_api.py",
+      "symbol": "TestGetUpdateDelete.test_update_missing_raises",
+      "relation": "calls",
+      "line": 64
+    },
+    {
+      "file": "tests\\test_bugs.py",
+      "symbol": "TestBug02UpdateMissingExpense.test_update_missing_raises_value_error",
+      "relation": "calls",
+      "line": 47
+    },
+    {
+      "file": "tests\\test_bugs.py",
+      "symbol": "TestBug02UpdateMissingExpense.test_update_missing_does_not_raise_attribute_error",
+      "relation": "calls",
+      "line": 55
+    }
+  ]
+}

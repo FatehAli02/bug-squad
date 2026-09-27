@@ -1,41 +1,95 @@
 {
-  "root_cause": "attrs.converters.optional() wraps a Converter returned by pipe(str, int) in a plain single-argument closure. The generated __init__ therefore calls optional_converter(value), and optional_converter calls the inner Converter with only value even though the Converter requires value, instance, and field. This causes a TypeError when Measurement(\"42\") is constructed.",
-  "impacted_items": [
+  "bugs": [
     {
-      "file": "oss_cases/attrs/bug01/upstream/src/attr/converters.py",
-      "function": "optional",
-      "risk": "High",
-      "reason": "This is the function containing the bug; optional() incorrectly handles a Converter object returned by pipe()."
+      "bug_id": "attrs_bug01",
+      "root_cause": "attrs.converters.optional() wraps a Converter returned by pipe(str, int) in a plain single-argument closure. The generated __init__ therefore calls optional_converter(value), and optional_converter calls the inner Converter with only value even though the Converter requires value, instance, and field. This causes a TypeError when Measurement(\"42\") is constructed.",
+      "impacted_items": [
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attr/converters.py",
+          "function": "optional",
+          "risk": "High",
+          "reason": "This is the function containing the bug; optional() incorrectly handles a Converter object returned by pipe().",
+          "covering_tests": []
+        },
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+          "function": "pipe",
+          "risk": "High",
+          "reason": "pipe() returns a Converter requiring value, instance, and field, which is incompatible with the current optional() wrapper.",
+          "covering_tests": []
+        },
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+          "function": "Converter.__call__",
+          "risk": "High",
+          "reason": "The Converter call requires three arguments, but optional_converter currently supplies only the value.",
+          "covering_tests": []
+        },
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
+          "function": "_make_init",
+          "risk": "Low",
+          "reason": "It correctly wraps the plain optional_converter, but this wrapping exposes the incompatible single-argument call path.",
+          "covering_tests": []
+        },
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attrs/converters.py",
+          "function": "optional",
+          "risk": "Medium",
+          "reason": "This module re-exports optional from attr.converters, so the namespace is affected when the underlying implementation is fixed.",
+          "covering_tests": []
+        },
+        {
+          "file": "oss_cases/attrs/bug01/upstream/src/attr/__init__.py",
+          "function": "converters",
+          "risk": "Low",
+          "reason": "This is a namespace import with no converter logic of its own.",
+          "covering_tests": []
+        }
+      ]
     },
     {
-      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
-      "function": "pipe",
-      "risk": "High",
-      "reason": "pipe() returns a Converter requiring value, instance, and field, which is incompatible with the current optional() wrapper."
-    },
-    {
-      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
-      "function": "Converter.__call__",
-      "risk": "High",
-      "reason": "The Converter call requires three arguments, but optional_converter currently supplies only the value."
-    },
-    {
-      "file": "oss_cases/attrs/bug01/upstream/src/attr/_make.py",
-      "function": "_make_init",
-      "risk": "Low",
-      "reason": "It correctly wraps the plain optional_converter, but this wrapping exposes the incompatible single-argument call path."
-    },
-    {
-      "file": "oss_cases/attrs/bug01/upstream/src/attrs/converters.py",
-      "function": "optional",
-      "risk": "Medium",
-      "reason": "This module re-exports optional from attr.converters, so the namespace is affected when the underlying implementation is fixed."
-    },
-    {
-      "file": "oss_cases/attrs/bug01/upstream/src/attr/__init__.py",
-      "function": "converters",
-      "risk": "Low",
-      "reason": "This is a namespace import with no converter logic of its own."
+      "bug_id": "sample_app_bug02",
+      "root_cause": "ExpenseTracker.update_expense (api.py line 87-88) calls self.get_expense(expense_id), which returns None when the ID is not found. The very next line dereferences exp.title (if exp.title is None:) without first checking whether exp itself is None. This raises AttributeError: 'NoneType' object has no attribute 'title' instead of the intended ValueError('Expense ... not found.'). The fix is to guard with `if exp is None:` before touching any attribute of exp.",
+      "impacted_items": [
+        {
+          "file": "sample_app/api.py",
+          "function": "ExpenseTracker.update_expense",
+          "risk": "High",
+          "reason": "This is the bug site; the missing None-check causes AttributeError to propagate to every caller instead of a clean ValueError.",
+          "covering_tests": [
+            "tests/test_api.py::TestGetUpdateDelete::test_update_title",
+            "tests/test_api.py::TestGetUpdateDelete::test_update_amount",
+            "tests/test_api.py::TestGetUpdateDelete::test_update_missing_raises",
+            "tests/test_bugs.py::TestBug02UpdateMissingExpense::test_update_missing_raises_value_error",
+            "tests/test_bugs.py::TestBug02UpdateMissingExpense::test_update_missing_does_not_raise_attribute_error"
+          ]
+        },
+        {
+          "file": "sample_app/api.py",
+          "function": "ExpenseTracker.get_expense",
+          "risk": "Medium",
+          "reason": "get_expense correctly returns None for a missing ID, but the caller (update_expense) fails to handle that None return value.",
+          "covering_tests": [
+            "tests/test_api.py::TestGetUpdateDelete::test_get_expense",
+            "tests/test_api.py::TestGetUpdateDelete::test_get_missing_returns_none"
+          ]
+        },
+        {
+          "file": "sample_app/main.py",
+          "function": "cmd_update",
+          "risk": "High",
+          "reason": "cmd_update is the CLI entry point that calls update_expense; it propagates the uncaught AttributeError directly to the user as a raw traceback.",
+          "covering_tests": []
+        },
+        {
+          "file": "sample_app/tests/test_api.py",
+          "function": "TestGetUpdateDelete.test_update_missing_raises",
+          "risk": "Low",
+          "reason": "Existing test accepts both ValueError and AttributeError (`pytest.raises((ValueError, AttributeError))`), so it passes even with the bug present and provides weak coverage.",
+          "covering_tests": []
+        }
+      ]
     }
   ]
 }
