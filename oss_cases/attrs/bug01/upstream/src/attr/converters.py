@@ -7,7 +7,7 @@ Commonly useful converters.
 import typing
 
 from ._compat import _AnnotationExtractor
-from ._make import NOTHING, Factory, pipe
+from ._make import NOTHING, Converter, Factory, pipe
 
 
 __all__ = [
@@ -33,12 +33,15 @@ def optional(converter):
     .. versionadded:: 17.1.0
     """
 
-    def optional_converter(val):
+    def optional_converter(val, instance, field):
         if val is None:
             return None
+        if isinstance(converter, Converter):
+            return converter(val, instance, field)
         return converter(val)
 
-    xtr = _AnnotationExtractor(converter)
+    c = converter.__call__ if isinstance(converter, Converter) else converter
+    xtr = _AnnotationExtractor(c)
 
     t = xtr.get_first_param_type()
     if t:
@@ -48,7 +51,7 @@ def optional(converter):
     if rt:
         optional_converter.__annotations__["return"] = typing.Optional[rt]
 
-    return optional_converter
+    return Converter(optional_converter, takes_self=True, takes_field=True)
 
 
 def default_if_none(default=NOTHING, factory=None):
