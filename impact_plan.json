@@ -131,6 +131,50 @@
           "covering_tests": []
         }
       ]
+    },
+    {
+      "bug_id": "sample_app_bug04",
+      "root_cause": "to_csv_rows in utils.py was declared with headers: List[str] = []. Python evaluates default argument expressions exactly once at function-definition time, so every call that omits headers shares the same list object. Any code that obtained a reference to that shared default and mutated it (via extend, append, or +=) would corrupt all subsequent headerless calls, which would then receive the already-mutated list instead of the canonical six-column default. The fix is to use headers: Optional[List[str]] = None and guard internally with `row_headers = headers if headers is not None else default_headers`.",
+      "impacted_items": [
+        {
+          "file": "sample_app/utils.py",
+          "function": "to_csv_rows",
+          "risk": "High",
+          "reason": "This is the bug site; the mutable default list is shared across all callers, making the function's output silently depend on call-site mutation history.",
+          "covering_tests": [
+            "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_default_is_not_mutable_list",
+            "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_two_calls_with_same_headers_produce_identical_output",
+            "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_no_headers_uses_default_six_columns"
+          ]
+        },
+        {
+          "file": "sample_app/utils.py",
+          "function": "export_csv",
+          "risk": "Medium",
+          "reason": "Calls to_csv_rows(expenses) with no headers argument; if the shared default is mutated by another caller earlier in the process, export_csv silently produces a wrong header row in the output file.",
+          "covering_tests": [
+            "tests/test_api.py::TestExport::test_export_csv",
+            "tests/test_api.py::TestExport::test_export_empty"
+          ]
+        },
+        {
+          "file": "sample_app/api.py",
+          "function": "ExpenseTracker.export_to_csv",
+          "risk": "Medium",
+          "reason": "Calls export_csv which calls to_csv_rows without headers; inherits the corruption risk from export_csv and exposes it to every consumer of the API.",
+          "covering_tests": [
+            "tests/test_api.py::TestExport::test_export_csv",
+            "tests/test_api.py::TestExport::test_export_empty"
+          ]
+        },
+        {
+          "file": "sample_app/main.py",
+          "function": "cmd_export",
+          "risk": "Low",
+          "reason": "CLI entry point that calls export_to_csv; a corrupted header would silently appear in the output CSV file with no error raised, but cmd_export has no direct interaction with the default list object itself.",
+          "covering_tests": []
+        }
+      ]
     }
   ]
 }
