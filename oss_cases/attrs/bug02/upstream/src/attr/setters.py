@@ -63,6 +63,12 @@ def convert(instance, attrib, new_value):
     """
     c = attrib.converter
     if c:
+        # A Converter object (from _make.py) carries takes_self / takes_field
+        # metadata. Its __call__ slot accepts (val, self_, field) so we must
+        # pass instance and attrib when calling it from a setattr hook.
+        # We use hasattr rather than isinstance to avoid a circular import.
+        if hasattr(c, "takes_self"):
+            return c(new_value, instance, attrib)
         return c(new_value)
 
     return new_value

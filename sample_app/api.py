@@ -85,7 +85,7 @@ class ExpenseTracker:
         the expense does not exist.
         """
         exp = self.get_expense(expense_id)
-        if exp.title is None:
+        if exp is None:
             raise ValueError(f"Expense '{expense_id}' not found.")
         if title is not None:
             exp.title = title.strip()
