@@ -8,6 +8,12 @@
       "line": 72
     },
     {
+      "file": "tests/test_bugs.py",
+      "symbol": "<module>",
+      "relation": "imports",
+      "line": 24
+    },
+    {
       "file": "main.py",
       "symbol": "cmd_list",
       "relation": "calls",
