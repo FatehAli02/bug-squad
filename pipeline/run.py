@@ -47,7 +47,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "blast_radius"))
 
 try:
-    from scan import build_graph, diff_graphs, write_graph
+    from scan import build_graph, diff_graphs, write_graph  # type: ignore
 except ImportError:
     build_graph = None
     diff_graphs = None
@@ -555,9 +555,10 @@ def _run_test_suite_internal(repo_root: Path) -> Dict[str, Any]:
     if app_path not in sys.path:
         sys.path.insert(0, app_path)
 
-    import tests.test_models as m_models
-    import tests.test_api as m_api
-    import tests.test_bugs as m_bugs
+    import importlib
+    m_models = importlib.import_module("tests.test_models")
+    m_api = importlib.import_module("tests.test_api")
+    m_bugs = importlib.import_module("tests.test_bugs")
 
     passed_tests: List[str] = []
     failed_tests: List[str] = []
@@ -579,8 +580,8 @@ def _run_test_suite_internal(repo_root: Path) -> Dict[str, Any]:
                             if "tmp_path" in sig.parameters:
                                 kwargs["tmp_path"] = tmp_path
                             if "tracker" in sig.parameters:
-                                from api import ExpenseTracker
-                                kwargs["tracker"] = ExpenseTracker(store_path=str(tmp_path / "test_expenses.json"))
+                                api_mod = importlib.import_module("api")
+                                kwargs["tracker"] = api_mod.ExpenseTracker(store_path=str(tmp_path / "test_expenses.json"))
                             fn(**kwargs)
                             passed_tests.append(test_id)
                         except Exception:

@@ -8,8 +8,8 @@ import json
 from pathlib import Path
 import sys
 from typing import Any, Dict, List, Optional
-import pandas as pd
-import streamlit as st
+import pandas as pd  # type: ignore
+import streamlit as st  # type: ignore
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -27,7 +27,7 @@ st.set_page_config(
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "blast_radius"))
 try:
-    from scan import build_graph, diff_graphs
+    from scan import build_graph, diff_graphs  # type: ignore
 except ImportError:
     build_graph = None
     diff_graphs = None
