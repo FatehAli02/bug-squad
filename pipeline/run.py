@@ -462,13 +462,216 @@ def cmd_verify(repo_root: Path, args: argparse.Namespace) -> int:
     else:
         print(f"  [5] Reviewer PR:   ⚠️ Missing ({pr_file.name})")
 
-    print("-" * 79)
-    if all_ok:
-        print(f"Status: Core pipeline handoff artifacts for {bug.upper()} are complete!")
-        return 0
+# ---------------------------------------------------------------------------
+# Test Runner & Regression Detection Helpers
+# ---------------------------------------------------------------------------
+
+def _run_test_suite_internal(repo_root: Path) -> Dict[str, Any]:
+    """
+    Execute sample_app/tests safely.
+    Attempts pytest first via subprocess; if pytest is unavailable, uses
+    built-in Python test harness to execute all 48 test methods safely.
+    """
+    import shutil
+    import subprocess
+
+    pytest_bin: Optional[List[str]] = None
+    venv_pytest = repo_root / "venv" / "bin" / "pytest"
+    dot_venv_pytest = repo_root / ".venv" / "bin" / "pytest"
+
+    if venv_pytest.is_file():
+        pytest_bin = [str(venv_pytest)]
+    elif dot_venv_pytest.is_file():
+        pytest_bin = [str(dot_venv_pytest)]
+    elif shutil.which("pytest"):
+        pytest_bin = ["pytest"]
     else:
-        print(f"Status: Some artifacts for {bug.upper()} are missing or incomplete.", file=sys.stderr)
-        return 1
+        try:
+            res = subprocess.run(
+                [sys.executable, "-m", "pytest", "--version"],
+                capture_output=True,
+                text=True,
+            )
+            if res.returncode == 0:
+                pytest_bin = [sys.executable, "-m", "pytest"]
+        except Exception:
+            pass
+
+    if pytest_bin is not None:
+        cmd = pytest_bin + ["sample_app/tests/", "-v", "--tb=short"]
+        proc = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True)
+        out = proc.stdout + proc.stderr
+        passed: List[str] = []
+        failed: List[str] = []
+        for line in out.splitlines():
+            m = re.match(r"^(.*?::.*?)\s+(PASSED|FAILED|ERROR)", line.strip())
+            if m:
+                test_name, outcome = m.group(1), m.group(2)
+                if outcome == "PASSED":
+                    passed.append(test_name)
+                else:
+                    failed.append(test_name)
+        return {
+            "runner": "pytest",
+            "passed": len(passed),
+            "failed": len(failed),
+            "total": len(passed) + len(failed),
+            "passed_tests": passed,
+            "failed_tests": failed,
+        }
+
+    # Fallback built-in test runner
+    import inspect
+    import shutil as _shutil
+    import tempfile
+    import types
+
+    class Approx:
+        def __init__(self, val: float):
+            self.val = val
+        def __eq__(self, other: Any) -> bool:
+            return abs(self.val - float(other)) < 0.01
+
+    class RaisesContext:
+        def __init__(self, expected: Any, match: Optional[str] = None):
+            self.expected = expected
+            self.match = match
+        def __enter__(self) -> Any:
+            return self
+        def __exit__(self, exc_type: Any, exc_val: Any, tb: Any) -> bool:
+            if exc_type is None:
+                raise AssertionError(f"Expected {self.expected}, but nothing was raised")
+            return issubclass(exc_type, self.expected)
+
+    pytest_shim = types.ModuleType("pytest")
+    pytest_shim.approx = Approx  # type: ignore
+    pytest_shim.raises = RaisesContext  # type: ignore
+    pytest_shim.fail = lambda msg="": (_ for _ in ()).throw(AssertionError(msg))  # type: ignore
+    pytest_shim.fixture = lambda fn: fn  # type: ignore
+    old_pytest = sys.modules.get("pytest")
+    sys.modules["pytest"] = pytest_shim
+
+    app_path = str(repo_root / "sample_app")
+    if app_path not in sys.path:
+        sys.path.insert(0, app_path)
+
+    import tests.test_models as m_models
+    import tests.test_api as m_api
+    import tests.test_bugs as m_bugs
+
+    passed_tests: List[str] = []
+    failed_tests: List[str] = []
+
+    for mod in [m_models, m_api, m_bugs]:
+        for attr in dir(mod):
+            cls = getattr(mod, attr)
+            if isinstance(cls, type) and attr.startswith("Test"):
+                for m_name in dir(cls):
+                    if m_name.startswith("test_"):
+                        test_id = f"sample_app/{mod.__name__.replace('.', '/')}.py::{attr}::{m_name}"
+                        tmp_dir = tempfile.mkdtemp()
+                        tmp_path = Path(tmp_dir)
+                        try:
+                            instance = cls()
+                            fn = getattr(instance, m_name)
+                            sig = inspect.signature(fn)
+                            kwargs = {}
+                            if "tmp_path" in sig.parameters:
+                                kwargs["tmp_path"] = tmp_path
+                            if "tracker" in sig.parameters:
+                                from api import ExpenseTracker
+                                kwargs["tracker"] = ExpenseTracker(store_path=str(tmp_path / "test_expenses.json"))
+                            fn(**kwargs)
+                            passed_tests.append(test_id)
+                        except Exception:
+                            failed_tests.append(test_id)
+                        finally:
+                            _shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    if old_pytest is not None:
+        sys.modules["pytest"] = old_pytest
+
+    return {
+        "runner": "built-in",
+        "passed": len(passed_tests),
+        "failed": len(failed_tests),
+        "total": len(passed_tests) + len(failed_tests),
+        "passed_tests": passed_tests,
+        "failed_tests": failed_tests,
+    }
+
+
+def cmd_regression(repo_root: Path, args: argparse.Namespace) -> int:
+    """Detect test regressions against the benchmark baseline."""
+    bug = args.bug.lower()
+    if not bug.startswith("bug"):
+        bug = f"bug{bug}"
+
+    reports_dir = repo_root / "pipeline" / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    baseline_file = reports_dir / "test_baseline.json"
+
+    baseline: Dict[str, Any] = {
+        "passed": 48,
+        "failed": 0,
+        "total": 48,
+        "failed_tests": [],
+    }
+    if baseline_file.is_file():
+        try:
+            baseline = json.loads(baseline_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    test_results = _run_test_suite_internal(repo_root)
+
+    # Save baseline file if not exists yet
+    if not baseline_file.is_file() and test_results["failed"] == 0:
+        baseline_file.write_text(json.dumps(test_results, indent=2), encoding="utf-8")
+
+    before_passed = baseline.get("passed", 48)
+    after_passed = test_results.get("passed", 0)
+
+    before_failed = set(baseline.get("failed_tests", []))
+    after_failed = set(test_results.get("failed_tests", []))
+    new_failures = sorted(after_failed - before_failed)
+
+    regression_detected = len(new_failures) > 0
+    status = "REGRESSION DETECTED" if regression_detected else "PASS"
+
+    regression_data = {
+        "bug_id": bug,
+        "status": status,
+        "regression_detected": regression_detected,
+        "before": {
+            "passed": before_passed,
+            "failed": len(before_failed),
+            "total": before_passed + len(before_failed),
+        },
+        "after": {
+            "passed": after_passed,
+            "failed": len(after_failed),
+            "total": after_passed + len(after_failed),
+        },
+        "new_failures_count": len(new_failures),
+        "new_failures": new_failures,
+        "test_runner": test_results.get("runner", "pytest"),
+    }
+
+    if getattr(args, "format", "human") == "json":
+        print(json.dumps(regression_data, indent=2))
+        return 1 if regression_detected else 0
+
+    print(f"Regression Check: {bug.upper()}")
+    print(f"Before: {before_passed} passed")
+    print(f"After: {after_passed} passed")
+    print(f"New failures: {len(new_failures)}")
+    if new_failures:
+        for f in new_failures:
+            print(f"  • {f}")
+    print(f"Status: {status}")
+
+    return 1 if regression_detected else 0
 
 
 # ---------------------------------------------------------------------------
@@ -514,6 +717,13 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_verify.add_argument("--bug", required=True, help="Bug identifier (e.g. bug01, bug02, 03)")
 
+    # regression
+    p_reg = sub.add_parser(
+        "regression", parents=[common],
+        help="Detect test regressions against benchmark baseline",
+    )
+    p_reg.add_argument("--bug", required=True, help="Bug identifier (e.g. bug01, bug02, 03)")
+
     return p
 
 
@@ -526,6 +736,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "audit": cmd_audit,
         "diff": cmd_diff,
         "verify": cmd_verify,
+        "regression": cmd_regression,
     }
 
     handler = dispatch.get(args.command)
