@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bug-squad"
+version = "0.2.0"
+description = "Autonomous End-to-End Bug Fixing and Change-Impact Analysis Powered by IBM Bob 2.0"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Bug Squad Team" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+dashboard = [
+    "streamlit>=1.32.0",
+    "pandas>=2.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.3.0",
+]
+
+[project.scripts]
+blast-radius = "scan:main"
+bug-squad = "run:main"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["sample_app/tests"]
+pythonpath = [
+    "sample_app",
+    "blast_radius",
+    "pipeline",
+]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+ignore = [
+    "E501", # line too long
+]
