@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
+import pandas as pd
 import streamlit as st
 
 # ---------------------------------------------------------------------------
@@ -22,6 +24,12 @@ st.set_page_config(
 # Paths (relative to repo root — run with: streamlit run dashboard/app.py)
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT / "blast_radius"))
+try:
+    from scan import build_graph, diff_graphs
+except ImportError:
+    build_graph = None
+    diff_graphs = None
 
 # ---------------------------------------------------------------------------
 # Inline data (avoid runtime file-read failures on cloud)
@@ -252,7 +260,7 @@ OSS_BUGS = [
     },
 ]
 
-BLAST_BEFORE = {
+BLAST_BEFORE_FALLBACK = {
     "target": "utils.month_date_range",
     "impacted": [
         {"file": "main.py", "symbol": "cmd_list", "relation": "imports", "line": 72},
@@ -261,7 +269,7 @@ BLAST_BEFORE = {
     ],
 }
 
-BLAST_AFTER = {
+BLAST_AFTER_FALLBACK = {
     "target": "utils.month_date_range",
     "impacted": [
         {"file": "main.py", "symbol": "cmd_list", "relation": "imports", "line": 72},
@@ -271,28 +279,108 @@ BLAST_AFTER = {
     ],
 }
 
-IMPACT_ITEMS = [
+def get_blast_graph(filename: str, fallback: dict) -> dict:
+    file_path = ROOT / "blast_radius" / filename
+    if file_path.is_file():
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "impacted" in data:
+                    return data
+        except Exception:
+            pass
+    return fallback
+
+BLAST_BEFORE = get_blast_graph("graph.json", BLAST_BEFORE_FALLBACK)
+BLAST_AFTER = get_blast_graph("graph_after.json", BLAST_AFTER_FALLBACK)
+
+IMPACT_ITEMS_FALLBACK = [
     # sample_app bug02
-    {"bug": "sample_app_bug02", "file": "sample_app/api.py", "function": "update_expense", "risk": "High", "covered": True},
-    {"bug": "sample_app_bug02", "file": "sample_app/api.py", "function": "get_expense", "risk": "Medium", "covered": True},
-    {"bug": "sample_app_bug02", "file": "sample_app/main.py", "function": "cmd_update", "risk": "High", "covered": False},
-    {"bug": "sample_app_bug02", "file": "sample_app/tests/test_api.py", "function": "test_update_missing_raises", "risk": "Low", "covered": True},
+    {"bug": "sample_app_bug02", "file": "sample_app/api.py", "function": "update_expense", "risk": "High", "covered": True, "reason": "Missing None-check causes AttributeError to propagate."},
+    {"bug": "sample_app_bug02", "file": "sample_app/api.py", "function": "get_expense", "risk": "Medium", "covered": True, "reason": "Returns None when ID is missing."},
+    {"bug": "sample_app_bug02", "file": "sample_app/main.py", "function": "cmd_update", "risk": "High", "covered": False, "reason": "CLI entry point calling update_expense."},
+    {"bug": "sample_app_bug02", "file": "sample_app/tests/test_api.py", "function": "test_update_missing_raises", "risk": "Low", "covered": True, "reason": "Existing test accepted AttributeError."},
     # sample_app bug03
-    {"bug": "sample_app_bug03", "file": "sample_app/api.py", "function": "over_budget_categories", "risk": "High", "covered": True},
-    {"bug": "sample_app_bug03", "file": "sample_app/utils.py", "function": "budget_status", "risk": "Medium", "covered": True},
-    {"bug": "sample_app_bug03", "file": "sample_app/api.py", "function": "check_all_budgets", "risk": "Low", "covered": False},
-    {"bug": "sample_app_bug03", "file": "sample_app/main.py", "function": "cmd_budget", "risk": "Low", "covered": False},
+    {"bug": "sample_app_bug03", "file": "sample_app/api.py", "function": "over_budget_categories", "risk": "High", "covered": True, "reason": "Filter on rounded percent_used misses boundary."},
+    {"bug": "sample_app_bug03", "file": "sample_app/utils.py", "function": "budget_status", "risk": "Medium", "covered": True, "reason": "Computes exact over_budget flag."},
+    {"bug": "sample_app_bug03", "file": "sample_app/api.py", "function": "check_all_budgets", "risk": "Low", "covered": False, "reason": "Assembles status list."},
+    {"bug": "sample_app_bug03", "file": "sample_app/main.py", "function": "cmd_budget", "risk": "Low", "covered": False, "reason": "CLI caller of check_all_budgets."},
     # sample_app bug04
-    {"bug": "sample_app_bug04", "file": "sample_app/utils.py", "function": "to_csv_rows", "risk": "High", "covered": True},
-    {"bug": "sample_app_bug04", "file": "sample_app/utils.py", "function": "export_csv", "risk": "Medium", "covered": True},
-    {"bug": "sample_app_bug04", "file": "sample_app/api.py", "function": "export_to_csv", "risk": "Medium", "covered": True},
-    {"bug": "sample_app_bug04", "file": "sample_app/main.py", "function": "cmd_export", "risk": "Low", "covered": False},
+    {"bug": "sample_app_bug04", "file": "sample_app/utils.py", "function": "to_csv_rows", "risk": "High", "covered": True, "reason": "Mutable default argument shared across callers."},
+    {"bug": "sample_app_bug04", "file": "sample_app/utils.py", "function": "export_csv", "risk": "Medium", "covered": True, "reason": "Calls to_csv_rows without headers."},
+    {"bug": "sample_app_bug04", "file": "sample_app/api.py", "function": "export_to_csv", "risk": "Medium", "covered": True, "reason": "API method calling export_csv."},
+    {"bug": "sample_app_bug04", "file": "sample_app/main.py", "function": "cmd_export", "risk": "Low", "covered": False, "reason": "CLI entry point calling export_to_csv."},
     # attrs bug01
-    {"bug": "attrs_bug01", "file": "src/attr/converters.py", "function": "optional", "risk": "High", "covered": False},
-    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "pipe", "risk": "High", "covered": False},
-    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "Converter.__call__", "risk": "High", "covered": False},
-    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "_make_init", "risk": "Low", "covered": False},
+    {"bug": "attrs_bug01", "file": "src/attr/converters.py", "function": "optional", "risk": "High", "covered": False, "reason": "Wraps Converter in single-arg closure."},
+    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "pipe", "risk": "High", "covered": False, "reason": "Returns 3-arg Converter incompatible with optional."},
+    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "Converter.__call__", "risk": "High", "covered": False, "reason": "Requires three arguments."},
+    {"bug": "attrs_bug01", "file": "src/attr/_make.py", "function": "_make_init", "risk": "Low", "covered": False, "reason": "Wraps optional_converter."},
 ]
+
+def get_impact_items() -> list[dict]:
+    plan_path = ROOT / "impact_plan.json"
+    if plan_path.is_file():
+        try:
+            with open(plan_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            items = []
+            for b in data.get("bugs", []):
+                bug_id = b.get("bug_id", "unknown")
+                for imp in b.get("impacted_items", []):
+                    items.append({
+                        "bug": bug_id,
+                        "file": imp.get("file", ""),
+                        "function": imp.get("function", ""),
+                        "risk": imp.get("risk", "Low"),
+                        "reason": imp.get("reason", ""),
+                        "covered": len(imp.get("covering_tests", [])) > 0,
+                    })
+            if items:
+                return items
+        except Exception:
+            pass
+    return IMPACT_ITEMS_FALLBACK
+
+IMPACT_ITEMS = get_impact_items()
+
+def generate_dot_graph(graph_data: dict) -> str:
+    """Generate Graphviz DOT representation of a Blast Radius dependency graph."""
+    target = graph_data.get("target", "Target")
+    impacted = graph_data.get("impacted", [])
+    lines = [
+        "digraph G {",
+        '  rankdir=LR;',
+        '  bgcolor="transparent";',
+        '  node [shape=box, style="filled,rounded", fontname="sans-serif", fontsize=10];',
+        '  edge [fontname="sans-serif", fontsize=9, color="#64748b"];',
+        f'  target [label="{target}\\n(Target)", fillcolor="#fee2e2", color="#ef4444", penwidth=2];',
+    ]
+    for idx, node in enumerate(impacted):
+        node_id = f"node_{idx}"
+        label = (
+            f"{node.get('file', '?')}\\n"
+            f"{node.get('symbol', '?')}\\n"
+            f"L{node.get('line', '?')}"
+        )
+        rel = node.get("relation", "calls")
+        depth = node.get("depth", 1)
+        if rel == "calls":
+            color = "#dbeafe"
+            border = "#3b82f6"
+        elif rel == "types":
+            color = "#f3e8ff"
+            border = "#a855f7"
+        elif rel == "subclasses":
+            color = "#fef3c7"
+            border = "#f59e0b"
+        else:
+            color = "#f1f5f9"
+            border = "#94a3b8"
+        edge_label = f"{rel}" + (f" (d={depth})" if depth > 1 else "")
+        lines.append(f'  {node_id} [label="{label}", fillcolor="{color}", color="{border}"];')
+        lines.append(f'  {node_id} -> target [label="{edge_label}"];')
+    lines.append("}")
+    return "\n".join(lines)
 
 PIPELINE_ROLES = [
     {"role": "Reproducer", "emoji": "🔴", "desc": "Writes a minimal failing test that proves the bug exists."},
@@ -414,7 +502,7 @@ html, body, [class*="css"] { font-family: -apple-system, "Segoe UI", system-ui, 
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("## 🐛 Bug Squad")
-    st.markdown("*IBM Bob Hackathon 2025*")
+    st.markdown("*IBM Bob Hackathon 2026*")
     st.markdown("---")
     page = st.radio(
         "Navigate",
@@ -471,7 +559,6 @@ Alongside the pipeline, **Blast Radius** is a static dependency-impact analyzer 
             "Category": ["Sample app bugs", "OSS bugs (attrs)", "OSS bugs (schedule)", "OSS bugs (jsonschema)", "OSS bugs (arrow)", "OSS bugs (yup)"],
             "Count": [5, 3, 2, 3, 3, 3],
         }
-        import pandas as pd
         df = pd.DataFrame(data)
         st.bar_chart(df.set_index("Category"), height=280)
 
@@ -505,7 +592,6 @@ elif page == "🔄 Pipeline":
     st.markdown("---")
     st.markdown('<div class="section-header">Handoff artefacts</div>', unsafe_allow_html=True)
 
-    import pandas as pd
     artefacts = pd.DataFrame([
         {"Produced by": "Reproducer",    "Artefact": "sample_app/tests/test_bugs.py",  "Consumed by": "Fixer, Reviewer"},
         {"Produced by": "Investigator",  "Artefact": "impact_plan.json",               "Consumed by": "Fixer, Reviewer"},
@@ -539,7 +625,6 @@ elif page == "🐞 Sample App Bugs":
     st.markdown("---")
 
     # Summary bar
-    import pandas as pd
     summary = pd.DataFrame([
         {"Bug": b["id"].upper(), "Tests Added": b["tests_added"], "Risk": b["risk"], "Status": b["status"]}
         for b in SAMPLE_BUGS
@@ -581,7 +666,6 @@ elif page == "📦 OSS Cases":
     st.markdown("15 real bugs from 5 permissively-licensed open-source projects, used as ground truth for Blast Radius precision/recall.")
     st.markdown("---")
 
-    import pandas as pd
     libs = ["attrs", "schedule", "jsonschema", "arrow", "yup"]
     selected_lib = st.selectbox("Filter by library", ["All"] + libs)
 
@@ -606,7 +690,6 @@ elif page == "📦 OSS Cases":
     st.markdown("---")
     st.markdown('<div class="section-header">Library summary</div>', unsafe_allow_html=True)
 
-    import pandas as pd
     lib_summary = pd.DataFrame([
         {"Library": lib, "Bugs": sum(1 for b in OSS_BUGS if b["lib"] == lib),
          "High Risk": sum(1 for b in OSS_BUGS if b["lib"] == lib and b["risk"] == "High"),
@@ -623,19 +706,77 @@ elif page == "💥 Blast Radius":
     st.markdown("Change-impact analysis — before and after the fix for Bug01 (`utils.month_date_range`).")
     st.markdown("---")
 
-    st.markdown('<div class="section-header">How it works</div>', unsafe_allow_html=True)
+    # ------------------------------------------------------------------
+    # 1. Interactive Live AST Scanner
+    # ------------------------------------------------------------------
+    st.markdown('<div class="section-header">🔍 Interactive Live AST Scanner</div>', unsafe_allow_html=True)
+    st.caption("Scan any symbol live across `sample_app/` using the updated Blast Radius AST engine.")
+    
+    col_t1, col_t2, col_t3 = st.columns([3, 1, 1])
+    with col_t1:
+        preset_target = st.selectbox(
+            "Select Target Symbol",
+            [
+                "utils.month_date_range",
+                "models.Expense",
+                "api.ExpenseTracker.update_expense",
+                "api.ExpenseTracker.monthly_expenses",
+                "utils.to_csv_rows",
+                "Custom...",
+            ],
+            index=0,
+        )
+        if preset_target == "Custom...":
+            scan_target = st.text_input("Enter symbol (module.symbol or bare name)", value="utils.parse_date")
+        else:
+            scan_target = preset_target
+
+    with col_t2:
+        scan_depth = st.slider("Depth", min_value=1, max_value=3, value=1, help="Transitive hop depth")
+
+    with col_t3:
+        st.write("")
+        st.write("")
+        run_scan_btn = st.button("🚀 Run Live Scan", type="primary")
+
+    if run_scan_btn and build_graph:
+        with st.spinner(f"Scanning `{scan_target}` at depth {scan_depth}..."):
+            live_result = build_graph(ROOT / "sample_app", scan_target, depth=scan_depth)
+        
+        impacted_cnt = len(live_result.get("impacted", []))
+        st.success(f"Found **{impacted_cnt}** impacted node(s) for `{scan_target}` at depth {scan_depth}")
+        st.graphviz_chart(generate_dot_graph(live_result))
+        with st.expander("📄 View Raw AST Output (JSON)"):
+            st.json(live_result)
+
+    st.markdown("---")
+
+    # ------------------------------------------------------------------
+    # 2. Before vs After Fix Comparison
+    # ------------------------------------------------------------------
+    st.markdown('<div class="section-header">📊 Before vs. After Fix Comparison</div>', unsafe_allow_html=True)
     st.markdown("""
-1. **Static scan** (`blast_radius/scan.py`) — builds a call/import graph via Python `ast` and saves it as JSON  
+1. **Static scan** (`blast_radius/scan.py`) — builds a call/import/type graph via Python `ast` and saves it as JSON  
 2. **Bob's reasoning** — reads the graph and rates each impacted item **High / Medium / Low** risk with a one-line rationale  
 3. **Before vs after** — the Reviewer re-runs the scan after the fix; any *new* nodes in the after-graph are flagged for manual review
     """)
 
-    st.markdown("---")
+    # Show Diff stats if diff_graphs available
+    if diff_graphs:
+        diff_res = diff_graphs(BLAST_BEFORE, BLAST_AFTER)
+        d_sum = diff_res["summary"]
+        dc1, dc2, dc3, dc4 = st.columns(4)
+        dc1.metric("Before Nodes", d_sum["before_count"])
+        dc2.metric("After Nodes", d_sum["after_count"])
+        dc3.metric("Added Nodes", f"+{d_sum['added_count']}", delta_color="inverse")
+        dc4.metric("Shared Nodes", d_sum["shared_count"])
+
     col_before, col_after = st.columns(2)
 
     with col_before:
         st.markdown("### 📊 Before fix (`graph.json`)")
         st.markdown(f"**Target:** `{BLAST_BEFORE['target']}`  \n**Impacted nodes:** {len(BLAST_BEFORE['impacted'])}")
+        st.graphviz_chart(generate_dot_graph(BLAST_BEFORE))
         for node in BLAST_BEFORE["impacted"]:
             st.markdown(f"""<span class="br-node">
                 <b>{node['file']}</b> · <code>{node['symbol']}</code> · {node['relation']} · L{node['line']}
@@ -644,7 +785,10 @@ elif page == "💥 Blast Radius":
     with col_after:
         st.markdown("### 📊 After fix (`graph_after.json`)")
         before_keys = {(n["file"], n["symbol"], n["relation"]) for n in BLAST_BEFORE["impacted"]}
-        st.markdown(f"**Target:** `{BLAST_AFTER['target']}`  \n**Impacted nodes:** {len(BLAST_AFTER['impacted'])} (+1 new)")
+        new_count = sum(1 for n in BLAST_AFTER["impacted"] if (n["file"], n["symbol"], n["relation"]) not in before_keys)
+        new_label = f" (+{new_count} new)" if new_count > 0 else ""
+        st.markdown(f"**Target:** `{BLAST_AFTER['target']}`  \n**Impacted nodes:** {len(BLAST_AFTER['impacted'])}{new_label}")
+        st.graphviz_chart(generate_dot_graph(BLAST_AFTER))
         for node in BLAST_AFTER["impacted"]:
             key = (node["file"], node["symbol"], node["relation"])
             is_new = key not in before_keys
@@ -676,8 +820,6 @@ elif page == "🗂 Impact Table":
     st.markdown("All impacted items identified by the Investigator across every analysed bug, with risk ratings and test coverage.")
     st.markdown("---")
 
-    import pandas as pd
-
     all_bugs_options = sorted(set(i["bug"] for i in IMPACT_ITEMS))
     selected_bug = st.selectbox("Filter by bug", ["All"] + all_bugs_options)
     selected_risk = st.selectbox("Filter by risk", ["All", "High", "Medium", "Low"])
@@ -696,6 +838,7 @@ elif page == "🗂 Impact Table":
             "Function": i["function"],
             "Risk": i["risk"],
             "Test Covered": "✅" if i["covered"] else "⚠️ Untested",
+            "Reason": i.get("reason", "N/A"),
         }
         for i in items
     ])
@@ -704,7 +847,7 @@ elif page == "🗂 Impact Table":
         return {"High": 0, "Medium": 1, "Low": 2}.get(r, 3)
 
     df = df.sort_values("Risk", key=lambda s: s.map(risk_order))
-    st.dataframe(df[["Bug", "File", "Function", "Risk", "Test Covered"]], width='stretch', hide_index=True)
+    st.dataframe(df[["Bug", "File", "Function", "Risk", "Test Covered", "Reason"]], width='stretch', hide_index=True)
 
     st.markdown("---")
     col_l, col_r = st.columns(2)
@@ -736,6 +879,6 @@ elif page == "🗂 Impact Table":
 # ---------------------------------------------------------------------------
 st.markdown("""
 <div class="footer">
-    Made with <strong>IBM Bob</strong> &mdash; Bug Squad &middot; IBM Bob Hackathon 2025
+    Made with <strong>IBM Bob</strong> &mdash; Bug Squad &middot; IBM Bob Hackathon 2026
 </div>
 """, unsafe_allow_html=True)
