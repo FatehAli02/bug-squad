@@ -1,0 +1,148 @@
+{
+  "bug_id": "bug02",
+  "target_symbol": "ExpenseTracker.update_expense",
+  "risk_level": "High",
+  "root_cause": "ExpenseTracker.update_expense (api.py line 87-88) calls self.get_expense(expense_id), which returns None when the ID is not found. The very next line dereferences exp.title (if exp.title is None:) without first checking whether exp itself is None. This raises AttributeError: 'NoneType' object has no attribute 'title' instead of the intended ValueError('Expense ... not found.'). The fix is to guard with `if exp is None:` before touching any attribute of exp.",
+  "changed_files": [
+    "sample_app/api.py"
+  ],
+  "blast_radius": {
+    "target": "utils.month_date_range",
+    "before_count": 6,
+    "after_count": 4,
+    "added_count": 4,
+    "removed_count": 6,
+    "shared_count": 0,
+    "added": [
+      {
+        "file": "main.py",
+        "symbol": "cmd_list",
+        "relation": "calls",
+        "line": 73
+      },
+      {
+        "file": "main.py",
+        "symbol": "cmd_list",
+        "relation": "imports",
+        "line": 72
+      },
+      {
+        "file": "tests/test_bugs.py",
+        "symbol": "<module>",
+        "relation": "imports",
+        "line": 24
+      },
+      {
+        "file": "utils.py",
+        "symbol": "filter_by_month",
+        "relation": "calls",
+        "line": 75
+      }
+    ],
+    "removed": [
+      {
+        "file": "main.py",
+        "symbol": "cmd_update",
+        "relation": "calls",
+        "line": 82
+      },
+      {
+        "file": "tests\\test_api.py",
+        "symbol": "TestGetUpdateDelete.test_update_amount",
+        "relation": "calls",
+        "line": 59
+      },
+      {
+        "file": "tests\\test_api.py",
+        "symbol": "TestGetUpdateDelete.test_update_missing_raises",
+        "relation": "calls",
+        "line": 64
+      },
+      {
+        "file": "tests\\test_api.py",
+        "symbol": "TestGetUpdateDelete.test_update_title",
+        "relation": "calls",
+        "line": 54
+      },
+      {
+        "file": "tests\\test_bugs.py",
+        "symbol": "TestBug02UpdateMissingExpense.test_update_missing_does_not_raise_attribute_error",
+        "relation": "calls",
+        "line": 55
+      },
+      {
+        "file": "tests\\test_bugs.py",
+        "symbol": "TestBug02UpdateMissingExpense.test_update_missing_raises_value_error",
+        "relation": "calls",
+        "line": 47
+      }
+    ],
+    "shared": []
+  },
+  "test_coverage": {
+    "total_impacted": 4,
+    "covered": 2,
+    "uncovered": 2,
+    "coverage_pct": 50.0,
+    "items": [
+      {
+        "file": "sample_app/api.py",
+        "symbol": "ExpenseTracker.update_expense",
+        "risk": "High",
+        "covered": true,
+        "covering_tests": [
+          "tests/test_api.py::TestGetUpdateDelete::test_update_title",
+          "tests/test_api.py::TestGetUpdateDelete::test_update_amount",
+          "tests/test_api.py::TestGetUpdateDelete::test_update_missing_raises",
+          "tests/test_bugs.py::TestBug02UpdateMissingExpense::test_update_missing_raises_value_error",
+          "tests/test_bugs.py::TestBug02UpdateMissingExpense::test_update_missing_does_not_raise_attribute_error"
+        ],
+        "reason": "This is the bug site; the missing None-check causes AttributeError to propagate to every caller instead of a clean ValueError."
+      },
+      {
+        "file": "sample_app/api.py",
+        "symbol": "ExpenseTracker.get_expense",
+        "risk": "Medium",
+        "covered": true,
+        "covering_tests": [
+          "tests/test_api.py::TestGetUpdateDelete::test_get_expense",
+          "tests/test_api.py::TestGetUpdateDelete::test_get_missing_returns_none"
+        ],
+        "reason": "get_expense correctly returns None for a missing ID, but the caller (update_expense) fails to handle that None return value."
+      },
+      {
+        "file": "sample_app/main.py",
+        "symbol": "cmd_update",
+        "risk": "High",
+        "covered": false,
+        "covering_tests": [],
+        "reason": "cmd_update is the CLI entry point that calls update_expense; it propagates the uncaught AttributeError directly to the user as a raw traceback."
+      },
+      {
+        "file": "sample_app/tests/test_api.py",
+        "symbol": "TestGetUpdateDelete.test_update_missing_raises",
+        "risk": "Low",
+        "covered": false,
+        "covering_tests": [],
+        "reason": "Existing test accepts both ValueError and AttributeError (`pytest.raises((ValueError, AttributeError))`), so it passes even with the bug present and provides weak coverage."
+      }
+    ]
+  },
+  "regression_status": {
+    "status": "PASS",
+    "before_passed": 48,
+    "after_passed": 48,
+    "new_failures_count": 0,
+    "new_failures": []
+  },
+  "reviewer_artifacts": {
+    "pr_description_file": "PR_DESCRIPTION_bug02.md",
+    "pr_description_found": true,
+    "graph_after_file": "graph_after.json",
+    "graph_after_found": true
+  },
+  "pipeline_status": {
+    "completion_pct": 100,
+    "status": "Complete (100%)"
+  }
+}

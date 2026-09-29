@@ -1,0 +1,114 @@
+{
+  "bug_id": "bug04",
+  "target_symbol": "to_csv_rows",
+  "risk_level": "High",
+  "root_cause": "to_csv_rows in utils.py was declared with headers: List[str] = []. Python evaluates default argument expressions exactly once at function-definition time, so every call that omits headers shares the same list object. Any code that obtained a reference to that shared default and mutated it (via extend, append, or +=) would corrupt all subsequent headerless calls, which would then receive the already-mutated list instead of the canonical six-column default. The fix is to use headers: Optional[List[str]] = None and guard internally with `row_headers = headers if headers is not None else default_headers`.",
+  "changed_files": [
+    "sample_app/utils.py",
+    "sample_app/api.py"
+  ],
+  "blast_radius": {
+    "target": "utils.month_date_range",
+    "before_count": 3,
+    "after_count": 4,
+    "added_count": 1,
+    "removed_count": 0,
+    "shared_count": 3,
+    "added": [
+      {
+        "file": "tests/test_bugs.py",
+        "symbol": "<module>",
+        "relation": "imports",
+        "line": 24
+      }
+    ],
+    "removed": [],
+    "shared": [
+      {
+        "file": "main.py",
+        "symbol": "cmd_list",
+        "relation": "calls",
+        "line": 73
+      },
+      {
+        "file": "main.py",
+        "symbol": "cmd_list",
+        "relation": "imports",
+        "line": 72
+      },
+      {
+        "file": "utils.py",
+        "symbol": "filter_by_month",
+        "relation": "calls",
+        "line": 75
+      }
+    ]
+  },
+  "test_coverage": {
+    "total_impacted": 4,
+    "covered": 3,
+    "uncovered": 1,
+    "coverage_pct": 75.0,
+    "items": [
+      {
+        "file": "sample_app/utils.py",
+        "symbol": "to_csv_rows",
+        "risk": "High",
+        "covered": true,
+        "covering_tests": [
+          "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_default_is_not_mutable_list",
+          "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_two_calls_with_same_headers_produce_identical_output",
+          "tests/test_bugs.py::TestBug04MutableDefaultHeaders::test_no_headers_uses_default_six_columns"
+        ],
+        "reason": "This is the bug site; the mutable default list is shared across all callers, making the function's output silently depend on call-site mutation history."
+      },
+      {
+        "file": "sample_app/utils.py",
+        "symbol": "export_csv",
+        "risk": "Medium",
+        "covered": true,
+        "covering_tests": [
+          "tests/test_api.py::TestExport::test_export_csv",
+          "tests/test_api.py::TestExport::test_export_empty"
+        ],
+        "reason": "Calls to_csv_rows(expenses) with no headers argument; if the shared default is mutated by another caller earlier in the process, export_csv silently produces a wrong header row in the output file."
+      },
+      {
+        "file": "sample_app/api.py",
+        "symbol": "ExpenseTracker.export_to_csv",
+        "risk": "Medium",
+        "covered": true,
+        "covering_tests": [
+          "tests/test_api.py::TestExport::test_export_csv",
+          "tests/test_api.py::TestExport::test_export_empty"
+        ],
+        "reason": "Calls export_csv which calls to_csv_rows without headers; inherits the corruption risk from export_csv and exposes it to every consumer of the API."
+      },
+      {
+        "file": "sample_app/main.py",
+        "symbol": "cmd_export",
+        "risk": "Low",
+        "covered": false,
+        "covering_tests": [],
+        "reason": "CLI entry point that calls export_to_csv; a corrupted header would silently appear in the output CSV file with no error raised, but cmd_export has no direct interaction with the default list object itself."
+      }
+    ]
+  },
+  "regression_status": {
+    "status": "PASS",
+    "before_passed": 48,
+    "after_passed": 48,
+    "new_failures_count": 0,
+    "new_failures": []
+  },
+  "reviewer_artifacts": {
+    "pr_description_file": "PR_DESCRIPTION_bug04.md",
+    "pr_description_found": true,
+    "graph_after_file": "graph_after.json",
+    "graph_after_found": true
+  },
+  "pipeline_status": {
+    "completion_pct": 100,
+    "status": "Complete (100%)"
+  }
+}
