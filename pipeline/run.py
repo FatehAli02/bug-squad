@@ -16,15 +16,19 @@ Usage
 -----
     # Show pipeline completion status across all tickets:
     python pipeline/run.py status
+    python pipeline/run.py status --format json
 
     # Audit risk ratings and test coverage in impact_plan.json:
     python pipeline/run.py audit
+    python pipeline/run.py audit --format json
 
     # Compare before-fix vs. after-fix Blast Radius dependency graphs:
     python pipeline/run.py diff
+    python pipeline/run.py diff --format json
 
     # Verify all handoff artifacts for a specific ticket:
     python pipeline/run.py verify --bug bug02
+    python pipeline/run.py verify --bug bug02 --format json
 """
 
 from __future__ import annotations
@@ -36,7 +40,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Ensure blast_radius is importable
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +82,19 @@ class StageStatus:
         ]
         return int((sum(checks) / len(checks)) * 100)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bug_id": self.bug_id,
+            "ticket_file": self.ticket_file,
+            "reproducer_found": self.reproducer_found,
+            "investigator_plan_found": self.investigator_plan_found,
+            "blast_before_found": self.blast_before_found,
+            "fixer_output_found": self.fixer_output_found,
+            "blast_after_found": self.blast_after_found,
+            "reviewer_pr_found": self.reviewer_pr_found,
+            "completion_pct": self.completion_pct(),
+        }
+
 
 # ---------------------------------------------------------------------------
 # Discovery & Verification Helpers
@@ -99,7 +116,7 @@ def _find_sample_app_bugs(repo_root: Path) -> List[StageStatus]:
     )
 
     impact_plan_file = repo_root / "impact_plan.json"
-    impact_data = {}
+    impact_data: Dict[str, Any] = {}
     if impact_plan_file.is_file():
         try:
             impact_data = json.loads(impact_plan_file.read_text(encoding="utf-8"))
@@ -150,8 +167,22 @@ def _find_sample_app_bugs(repo_root: Path) -> List[StageStatus]:
 # ---------------------------------------------------------------------------
 
 def cmd_status(repo_root: Path, args: argparse.Namespace) -> int:
-    """Print the 4-subagent pipeline handoff status table."""
+    """Print the 4-subagent pipeline handoff status (human or JSON)."""
     statuses = _find_sample_app_bugs(repo_root)
+
+    if getattr(args, "format", "human") == "json":
+        data = {
+            "bugs": [s.to_dict() for s in statuses],
+            "summary": {
+                "total_bugs": len(statuses),
+                "fully_completed": sum(1 for s in statuses if s.completion_pct() == 100),
+                "avg_completion_pct": round(
+                    sum(s.completion_pct() for s in statuses) / max(1, len(statuses)), 1
+                ),
+            },
+        }
+        print(json.dumps(data, indent=2))
+        return 0
 
     print("=" * 79)
     print("🐛 Bug Squad Pipeline — 4-Stage Subagent Handoff Status")
@@ -184,7 +215,7 @@ def cmd_status(repo_root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_audit(repo_root: Path, args: argparse.Namespace) -> int:
-    """Audit impact_plan.json for risk ratings and untested dependencies."""
+    """Audit impact_plan.json for risk ratings and untested dependencies (human or JSON)."""
     plan_path = repo_root / "impact_plan.json"
     if not plan_path.is_file():
         print(f"Error: Impact plan '{plan_path}' not found.", file=sys.stderr)
@@ -203,17 +234,11 @@ def cmd_audit(repo_root: Path, args: argparse.Namespace) -> int:
     low_count = 0
     covered_count = 0
 
-    print("=" * 79)
-    print("🔍 Bug Squad Impact Plan Audit (IBM Bob Investigator Output)")
-    print("=" * 79)
-
+    audit_bugs: List[Dict[str, Any]] = []
     for b in bugs:
         bug_id = b.get("bug_id", "unknown")
         items = b.get("impacted_items", [])
-        print(f"\n📦 Bug: {bug_id} ({len(items)} impacted items)")
-        print(f"   Root Cause: {b.get('root_cause', '')[:90]}...")
-        print(f"   {'File':<25} {'Function':<25} {'Risk':<8} {'Covered':<10}")
-        print("   " + "-" * 70)
+        parsed_items: List[Dict[str, Any]] = []
 
         for item in items:
             total_items += 1
@@ -228,11 +253,55 @@ def cmd_audit(repo_root: Path, args: argparse.Namespace) -> int:
             cov = len(item.get("covering_tests", [])) > 0
             if cov:
                 covered_count += 1
-            cov_str = "✅ Yes" if cov else "⚠️ Untested"
 
-            f_name = Path(item.get("file", "")).name
-            func = item.get("function", "")[:23]
-            print(f"   {f_name:<25} {func:<25} {risk:<8} {cov_str:<10}")
+            parsed_items.append({
+                "file": item.get("file", ""),
+                "function": item.get("function", ""),
+                "risk": risk,
+                "covered": cov,
+                "covering_tests": item.get("covering_tests", []),
+                "reason": item.get("reason", ""),
+            })
+
+        audit_bugs.append({
+            "bug_id": bug_id,
+            "root_cause": b.get("root_cause", ""),
+            "impacted_items": parsed_items,
+        })
+
+    audit_result = {
+        "bugs": audit_bugs,
+        "summary": {
+            "total_items": total_items,
+            "high_risk": high_count,
+            "medium_risk": med_count,
+            "low_risk": low_count,
+            "covered_items": covered_count,
+            "uncovered_items": total_items - covered_count,
+            "coverage_pct": round((covered_count / max(1, total_items)) * 100, 1),
+        },
+    }
+
+    if getattr(args, "format", "human") == "json":
+        print(json.dumps(audit_result, indent=2))
+        return 0
+
+    print("=" * 79)
+    print("🔍 Bug Squad Impact Plan Audit (IBM Bob Investigator Output)")
+    print("=" * 79)
+
+    for ab in audit_bugs:
+        items = ab["impacted_items"]
+        print(f"\n📦 Bug: {ab['bug_id']} ({len(items)} impacted items)")
+        print(f"   Root Cause: {ab['root_cause'][:90]}...")
+        print(f"   {'File':<25} {'Function':<25} {'Risk':<8} {'Covered':<10}")
+        print("   " + "-" * 70)
+
+        for item in items:
+            cov_str = "✅ Yes" if item["covered"] else "⚠️ Untested"
+            f_name = Path(item["file"]).name
+            func = item["function"][:23]
+            print(f"   {f_name:<25} {func:<25} {item['risk']:<8} {cov_str:<10}")
 
     print("\n" + "=" * 79)
     print(f"Summary: {total_items} items analyzed across {len(bugs)} bug tickets")
@@ -245,7 +314,7 @@ def cmd_audit(repo_root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_diff(repo_root: Path, args: argparse.Namespace) -> int:
-    """Compare before and after fix Blast Radius graphs."""
+    """Compare before and after fix Blast Radius graphs (human or JSON)."""
     if diff_graphs is None:
         print("Error: blast_radius/scan.py diff_graphs function not available.", file=sys.stderr)
         return 1
@@ -266,6 +335,11 @@ def cmd_diff(repo_root: Path, args: argparse.Namespace) -> int:
         after_g = json.load(fa)
 
     diff = diff_graphs(before_g, after_g)
+
+    if getattr(args, "format", "human") == "json":
+        print(json.dumps(diff, indent=2))
+        return 0
+
     summary = diff["summary"]
 
     print("=" * 79)
@@ -293,7 +367,7 @@ def cmd_diff(repo_root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_verify(repo_root: Path, args: argparse.Namespace) -> int:
-    """Verify handoff artifacts for a given bug ID (e.g. bug01, bug02)."""
+    """Verify handoff artifacts for a given bug ID (human or JSON)."""
     bug = args.bug.lower()
     if not bug.startswith("bug"):
         bug = f"bug{bug}"
@@ -303,43 +377,87 @@ def cmd_verify(repo_root: Path, args: argparse.Namespace) -> int:
     reproducer_file = repo_root / "sample_app" / "tests" / "test_bugs.py"
     fixer_file = repo_root / f"FIXER_OUTPUT_{bug}.md"
     pr_file = repo_root / f"PR_DESCRIPTION_{bug}.md"
+    plan_file = repo_root / "impact_plan.json"
+    graph_file = repo_root / "blast_radius" / "graph.json"
+    graph_after_file = repo_root / "blast_radius" / "graph_after.json"
+
+    has_ticket = ticket_file.is_file()
+    has_reproducer = (
+        reproducer_file.is_file()
+        and f"TestBug{int(num_str):02d}" in reproducer_file.read_text(encoding="utf-8")
+    )
+    has_plan = plan_file.is_file()
+    has_fixer = fixer_file.is_file()
+    has_pr = pr_file.is_file()
+    has_graph_before = graph_file.is_file()
+    has_graph_after = graph_after_file.is_file()
+
+    all_ok = has_ticket and has_reproducer and has_plan and has_fixer and has_pr
+
+    verify_result = {
+        "bug_id": bug,
+        "complete": all_ok,
+        "artifacts": {
+            "ticket": {
+                "found": has_ticket,
+                "file": str(ticket_file.relative_to(repo_root)) if has_ticket else None,
+            },
+            "reproducer": {
+                "found": has_reproducer,
+                "symbol": f"TestBug{int(num_str):02d}",
+                "file": "sample_app/tests/test_bugs.py",
+            },
+            "investigator": {
+                "found": has_plan,
+                "file": "impact_plan.json",
+                "graph_before": has_graph_before,
+            },
+            "fixer": {
+                "found": has_fixer,
+                "file": fixer_file.name if has_fixer else None,
+            },
+            "reviewer": {
+                "found": has_pr,
+                "file": pr_file.name if has_pr else None,
+                "graph_after": has_graph_after,
+            },
+        },
+    }
+
+    if getattr(args, "format", "human") == "json":
+        print(json.dumps(verify_result, indent=2))
+        return 0 if all_ok else 1
 
     print("=" * 79)
     print(f"📋 Verifying Pipeline Handoff Artifacts for {bug.upper()}")
     print("=" * 79)
 
-    all_ok = True
-
     # 1. Ticket
-    if ticket_file.is_file():
+    if has_ticket:
         print(f"  [1] Ticket:        ✅ Found ({ticket_file.relative_to(repo_root)})")
     else:
         print(f"  [1] Ticket:        ❌ Missing ({ticket_file.relative_to(repo_root)})")
-        all_ok = False
 
     # 2. Reproducer
-    if reproducer_file.is_file() and f"TestBug{int(num_str):02d}" in reproducer_file.read_text(encoding="utf-8"):
+    if has_reproducer:
         print(f"  [2] Reproducer:    ✅ Found TestBug{int(num_str):02d} in test_bugs.py")
     else:
         print(f"  [2] Reproducer:    ❌ TestBug{int(num_str):02d} not found in test_bugs.py")
-        all_ok = False
 
     # 3. Investigator
-    plan_file = repo_root / "impact_plan.json"
-    if plan_file.is_file():
+    if has_plan:
         print(f"  [3] Investigator:  ✅ impact_plan.json verified")
     else:
         print(f"  [3] Investigator:  ❌ impact_plan.json missing")
-        all_ok = False
 
     # 4. Fixer
-    if fixer_file.is_file():
+    if has_fixer:
         print(f"  [4] Fixer Output:  ✅ Found ({fixer_file.name})")
     else:
         print(f"  [4] Fixer Output:  ⚠️ Missing ({fixer_file.name})")
 
     # 5. Reviewer PR
-    if pr_file.is_file():
+    if has_pr:
         print(f"  [5] Reviewer PR:   ✅ Found ({pr_file.name})")
     else:
         print(f"  [5] Reviewer PR:   ⚠️ Missing ({pr_file.name})")
@@ -358,23 +476,42 @@ def cmd_verify(repo_root: Path, args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 def _build_parser() -> argparse.ArgumentParser:
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
+        "--format", choices=["human", "json"], default="human",
+        help="Output format: 'human' (default) or 'json'.",
+    )
+
     p = argparse.ArgumentParser(
         description="Bug Squad Pipeline Orchestrator and Artifact Audit CLI.",
         formatter_class=argparse.RawTextHelpFormatter,
+        parents=[common],
     )
     sub = p.add_subparsers(dest="command", required=True)
 
     # status
-    p_status = sub.add_parser("status", help="Show 4-stage pipeline completion status across tickets")
+    sub.add_parser(
+        "status", parents=[common],
+        help="Show 4-stage pipeline completion status across tickets",
+    )
 
     # audit
-    p_audit = sub.add_parser("audit", help="Audit risk ratings and test coverage in impact_plan.json")
+    sub.add_parser(
+        "audit", parents=[common],
+        help="Audit risk ratings and test coverage in impact_plan.json",
+    )
 
     # diff
-    p_diff = sub.add_parser("diff", help="Compare before and after fix Blast Radius graphs")
+    sub.add_parser(
+        "diff", parents=[common],
+        help="Compare before and after fix Blast Radius graphs",
+    )
 
     # verify
-    p_verify = sub.add_parser("verify", help="Verify pipeline handoff artifacts for a specific bug")
+    p_verify = sub.add_parser(
+        "verify", parents=[common],
+        help="Verify pipeline handoff artifacts for a specific bug",
+    )
     p_verify.add_argument("--bug", required=True, help="Bug identifier (e.g. bug01, bug02, 03)")
 
     return p
